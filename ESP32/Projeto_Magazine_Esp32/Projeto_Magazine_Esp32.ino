@@ -80,9 +80,45 @@ char magazineRecebida[3][5] = {
   "----"
 };
 
+
+// - - - - - - - - - - - - - - - - - - -
+//Variáveis do Processo
+// - - - - - - - - - - - - - - - - - - -
+
+//Tipo de Peça
+bool Hab_V = 1;
+bool Hab_P = 1;
+bool Hab_M = 1;
+
+//Tipo de Peça em cada Prateleira
+byte Prat_V = 0;
+byte Prat_P = 1;
+byte Prat_M = 2;
+
+//Operação
+//'c' = Encher Magazine, Colocar Peças
+//'r' = Esvaziar Magazine, Retirar Peças
+char Operacao = 'c';
+
+//Ordem de Retidada e Posicionamento de Peças
+//'s' = Sequência
+//'a' = Alternado
+char Ordem = 's';
+
+//Número de Ciclos de movimentos que o robô vai realizar
+//entre 1 e 100 => ciclos definidos pelo número
+//150  => sem ciclos (apenas o movimento de colocar ou de remover peças)
+//200 => ciclos infinitos
+//Máximo de ciclos: 100
+byte n_ciclos = 0;
+
+//------------------------------------------
+
 void conectarWifi();
 void conectarFirebase();
 void receberDadosMagazine();
+void receberDadosConfigsRTDB();
+void enviarDadosConfigsRTDB();
 void enviarDadosRTDB();
 void setMagazineRTDB(int, int, String);
 
@@ -459,3 +495,52 @@ void enviarDadosRTDB() {
     }
   }
 }*/
+
+
+// - - - - TESTAR - - - - 
+
+void receberDadosConfigsRTDB(){
+
+}
+
+
+struct configs {
+  bool Hab_V;
+  bool Hab_P;
+  bool Hab_M;
+  byte Prat_V;
+  byte Prat_P;
+  byte Prat_M;
+  char Operacao;
+  char Ordem;
+  byte n_ciclos;
+};
+
+void enviarDadosConfigsRTDB(){
+ //atualiza o banco de dados com as novas configurações do processo
+  static String path = String();
+  path = "configs";
+
+  configs configAtualizada = {
+    Hab_V,
+    Hab_P,
+    Hab_M,
+    Prat_V,
+    Prat_P,
+    Prat_M,
+    Operacao,
+    Ordem,
+    n_ciclos
+  }
+
+  if (Firebase.ready() && signupOK) {
+    if (Firebase.RTDB.set(&fbdo, path, configAtualizada)) {
+      Serial.println("PASSED");
+      Serial.println("PATH: " + fbdo.dataPath());
+      Serial.println("TYPE: " + fbdo.dataType());
+    } else {
+      Serial.println("FAILED");
+      Serial.println("REASON: " + fbdo.errorReason());
+    }
+  }
+}
