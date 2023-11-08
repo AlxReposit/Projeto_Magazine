@@ -49,6 +49,9 @@
 /* 6. Define the Firebase Data object */
 FirebaseData fbdo;
 
+// Firebase Data object para a função Stream
+FirebaseData stream;
+
 /* 7. Define the FirebaseAuth data for authentication data */
 FirebaseAuth auth;
 
@@ -79,6 +82,8 @@ char magazineRecebida[3][5] = {
   "----",
   "----"
 };
+
+volatile bool dataChanged = false;
 
 
 // - - - - - - - - - - - - - - - - - - -
@@ -148,15 +153,30 @@ void conectarFirebase() {
   // Assign the RTDB URL
   config.database_url = DATABASE_URL;
 
-  /*
+
+ // ----------------------------------------------------------------------------
+  // Assign the callback function for the long running token generation task 
+  config.token_status_callback = tokenStatusCallback; // see addons/TokenHelper.h
+
+  // Comment or pass false value when WiFi reconnection will control by your code or third party library e.g. WiFiManager
   Firebase.reconnectNetwork(true);
 
   // Since v4.4.x, BearSSL engine was used, the SSL buffer need to be set.
   // Large data transmission may require larger RX buffer, otherwise connection issue or data read time out can be occurred.
-  fbdo.setBSSLBufferSize(4096 / * Rx buffer size in bytes from 512 - 16384 * /, 1024 / * Tx buffer size in bytes from 512 - 16384 * /);
+  fbdo.setBSSLBufferSize(2048 / * Rx buffer size in bytes from 512 - 16384 * /, 1024 / * Tx buffer size in bytes from 512 - 16384 * /);
+  stream.setBSSLBufferSize(2048 / * Rx buffer size in bytes from 512 - 16384 * /, 1024 / * Tx buffer size in bytes from 512 - 16384 * /);
 
-  fbdo.setResponseSize(4096);
-*/
+  Firebase.begin(&config, &auth);
+
+  //Iniciar conexão Stream para monitorar mudanças em Start, Stop e Configs 
+  //if (!Firebase.RTDB.beginStream(&stream, "/test/stream/data"))
+  if (!Firebase.RTDB.stream(&stream, "/test/stream/data"))
+    Serial.printf("sream begin error, %s\n\n", stream.errorReason().c_str());
+
+  Firebase.RTDB.setStreamCallback(&stream, streamCallback, streamTimeoutCallback);
+  // ---------------------------------------------------------------------------------
+ 
+/*
   // Sign up
   if (Firebase.signUp(&config, &auth, "", "")) {
     Serial.println("OK");
@@ -165,13 +185,10 @@ void conectarFirebase() {
     Serial.printf("%s\n", config.signer.signupError.message.c_str());
   }
 
-  /* Assign the callback function for the long running token generation task */
-  config.token_status_callback = tokenStatusCallback;  // see addons/TokenHelper.h
-
   // Assign the maximum retry of token generation
   config.max_token_generation_retry = 5;
 
-  /* Assign the callback function for the long running token generation task */
+  // Assign the callback function for the long running token generation task
   config.token_status_callback = tokenStatusCallback;  // see addons/TokenHelper.h
 
   // To refresh the token 5 minutes before expired
@@ -179,14 +196,15 @@ void conectarFirebase() {
 
   // Use refresh token and force token to refresh immediately
   // Refresh token is required for id token refreshing.
-  Firebase.setIdToken(&config, "" /* set id token to empty to refresh token immediately */, 3600 /* expiry time */, "<Refresh Token>");
+  Firebase.setIdToken(&config, "" / * set id token to empty to refresh token immediately * /, 3600 / * expiry time * /, "<Refresh Token>");
 
   // Or refresh token manually
   // Firebase.refreshToken(&config);
 
-  /* Initialize the library with the Firebase authen and config */
+  // Initialize the library with the Firebase authen and config 
   Firebase.begin(&config, &auth);
   Firebase.reconnectWiFi(true);
+  */
 }
 
 void setup() {
@@ -544,3 +562,206 @@ void enviarDadosConfigsRTDB(){
     }
   }
 }
+
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+// Stream para monitorar mudanças 
+//rtdb: colocar start, stop e novas_configs em um node "stream"
+//monitorar mudanças em stream e atualizar start e stop, se mudar novas_configs, atualizar as vars com vase em "configs"
+//Colcoar antes do setup
+
+// - - - - - - - - - Callback - - - - - - - - - - 
+void streamCallback(FirebaseStream data)
+{
+  Serial.printf("sream path, %s\nevent path, %s\ndata type, %s\nevent type, %s\n\n",
+                data.streamPath().c_str(),
+                data.dataPath().c_str(),
+                data.dataType().c_str(),
+                data.eventType().c_str());
+  printResult(data); // see addons/RTDBHelper.h
+  Serial.println();
+
+  // This is the size of stream payload received (current and max value)
+  // Max payload size is the payload size under the stream path since the stream connected
+  // and read once and will not update until stream reconnection takes place.
+  // This max value will be zero as no payload received in case of ESP8266 which
+  // BearSSL reserved Rx buffer size is less than the actual stream payload.
+  Serial.printf("Received stream payload size: %d (Max. %d)\n\n", data.payloadLength(), data.maxPayloadLength());
+
+  // Due to limited of stack memory, do not perform any task that used large memory here especially starting connect to server.
+  // Just set this flag and check it status later.
+  dataChanged = true;
+}
+
+void streamTimeoutCallback(bool timeout)
+{
+  if (timeout)
+    Serial.println("stream timed out, resuming...\n");
+
+  if (!stream.httpConnected())
+    Serial.printf("error code: %d, reason: %s\n\n", stream.httpCode(), stream.errorReason().c_str());
+}
+
+//colocar em loop()
+void novosDados(){
+ if (dataChanged)
+  {
+    dataChanged = false;
+    // When stream data is available, do anything here...
+
+   Serial.println();
+  }
+}
+
+
+
+// - - - - - - - - - Sem Callback - - - - - - - - - - 
+void iniciaStream(){
+// In setup(), set the streaming path to "/test/data" and begin stream connection.
+if (!Firebase.RTDB.stream(&fbdo, "/stream"))
+{
+  Serial.println(fbdo.errorReason());
+}
+}
+
+void monitorarStream(){
+// Place this in loop()
+if (!Firebase.RTDB.readStream(&fbdo))
+{
+  Serial.println(fbdo.errorReason());
+}
+
+if (fbdo.streamTimeout())
+{
+  Serial.println("Stream timeout, resume streaming...");
+  Serial.println();
+}
+
+if (fbdo.streamAvailable())
+{
+  if (fbdo.dataTypeEnum() == firebase_rtdb_data_type_integer)
+    Serial.println(fbdo.to<int>());
+  else if (fbdo.dataTypeEnum() == firebase_rtdb_data_type_float)
+    Serial.println(fbdo.to<float>(), 5);
+  else if (fbdo.dataTypeEnum() == firebase_rtdb_data_type_double)
+    printf("%.9lf\n", fbdo.to<double>());
+  else if (fbdo.dataTypeEnum() == firebase_rtdb_data_type_boolean)
+    Serial.println(fbdo.to<bool>() ? "true" : "false");
+  else if (fbdo.dataTypeEnum() == firebase_rtdb_data_type_string)
+    Serial.println(fbdo.to<String>());
+  else if (fbdo.dataTypeEnum() == firebase_rtdb_data_type_json)
+  {
+      FirebaseJson *json = fbdo.to<FirebaseJson *>();
+      Serial.println(json->raw());
+  }
+  else if (fbdo.dataTypeEnum() == firebase_rtdb_data_type_array)
+  {
+      FirebaseJsonArray *arr = fbdo.to<FirebaseJsonArray *>();
+      Serial.println(arr->raw());
+  }
+}
+}
+
+// For authentication except for legacy token, Firebase.ready() should be called repeatedly 
+// in loop() to handle authentication tasks.
+/*
+void loop()
+{
+  if (Firebase.ready())
+  {
+    // Firebase is ready to use now.
+    
+  }
+}*/
+
+
+
+
+
+
+// - - - - - exemplo com callback - - - - - -
+
+/*
+// In setup(), set the streaming path to "/test/data" and begin stream connection.
+
+if (!Firebase.RTDB.Stream(&fbdo, "/test/data", dataCallback))
+{
+  // Could not begin stream connection, then print out the error detail.
+  Serial.println(fbdo.errorReason());
+}
+
+  
+  // Global function that handles stream data
+void dataCallback(FirebaseData &data)
+{
+
+  if (data.isStream())
+  {
+
+    if (data.callbackEventType() == firebase_callback_event_response_keepalive)
+    {
+      Serial.println("Stream keep alive event");
+    }
+    else if (data.callbackEventType() == firebase_callback_event_response_auth_revoked)
+    {
+      Serial.println("Stream auth revoked event");
+    }
+    else if (data.callbackEventType() == firebase_callback_event_response_timed_out)
+    {
+      Serial.println("Stream timed out");
+
+      if (!stream.httpConnected())
+        Serial_Printf("error code: %d, reason: %s\n\n", data.httpCode(), data.errorReason().c_str());
+    }
+    else if (data.callbackEventType() == firebase_callback_event_response_error)
+       Serial.printf("Stream error, %s", data.errorReason());
+    else if (data.callbackEventType() == firebase_callback_event_response_received)
+    {
+      Serial.println("Stream payload received");
+
+      Serial_Printf("sream path, %s\nevent path, %s\ndata type, %s\nevent type, %s\n\n",
+                    data.streamPath().c_str(),
+                    data.dataPath().c_str(),
+                    data.dataType().c_str(),
+                    data.eventType().c_str());
+
+      if (data.dataTypeEnum() == firebase_rtdb_data_type_integer)
+        Serial.println(data.to<int>());
+      else if (data.dataTypeEnum() == firebase_rtdb_data_type_float)
+        Serial.println(data.to<float>(), 5);
+      else if (data.dataTypeEnum() == firebase_rtdb_data_type_double)
+        printf("%.9lf\n", data.to<double>());
+      else if (data.dataTypeEnum() == firebase_rtdb_data_type_boolean)
+        Serial.println(data.to<bool>() ? "true" : "false");
+      else if (data.dataTypeEnum() == firebase_rtdb_data_type_string)
+        Serial.println(data.to<String>());
+      else if (data.dataTypeEnum() == firebase_rtdb_data_type_json)
+      {
+        FirebaseJson *json = data.to<FirebaseJson *>();
+        Serial.println(json->raw());
+      }
+      else if (data.dataTypeEnum() == firebase_rtdb_data_type_array)
+      {
+        FirebaseJsonArray *arr = data.to<FirebaseJsonArray *>();
+        Serial.println(arr->raw());
+      }
+
+      Serial.println();
+    }
+  }
+
+}
+
+// For authentication except for legacy token, Firebase.ready() should be called repeatedly 
+// in loop() to handle authentication tasks.
+
+void loop()
+{
+  if (Firebase.ready())
+  {
+    // Firebase is ready to use now.
+
+  }
+}
+*/
