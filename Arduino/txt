@@ -1,1 +1,144 @@
-Códigs Arduino
+Algumas referências importantes que forma utilizadas para gerar o código do arduino:
+
+- Uso de millis() para controlar um tempo / gerar um atraso, sem parar o programa (evitando delay()), 
+  assim podendo fazer mais de uma coisa ao mesmo tempo:
+https://forum.arduino.cc/t/demonstration-code-for-several-things-at-the-same-time/217158/1
+
+- Strings() e *chars: 
+https://hackingmajenkoblog.wordpress.com/2016/02/04/the-evils-of-arduino-strings/
+
+- Comunicação Serial: 
+https://forum.arduino.cc/t/serial-input-basics-updated/382007
+
+- Função random() para gerar um número aleatório:
+https://www.arduino.cc/reference/en/language/functions/random-numbers/random/
+
+
+
+
+
+
+bool Hab_V = 1;
+bool Hab_P = 1;
+bool Hab_M = 1;
+
+byte Prat_V = 1;
+byte Prat_P = 2;
+byte Prat_M = 3;
+
+//Operação
+//'c' = Encher Magazine, Colocar Peças
+//'r' = Esvaziar Magazine, Retirar Peças
+char Operacao = 'e';
+
+//Ordem de Retidada e Posicionamento de Peças
+//'s' = Sequência
+//'a' = Alternado
+char Ordem = 'a';
+
+int n_ciclos = 0;
+
+void receberDadosConfigsEsp32();
+
+void setup() {
+  Serial.begin(9600);
+  Serial.println("inicio");
+}
+
+void loop() {
+  receberDadosConfigsEsp32();
+}
+
+
+void receberDadosConfigsEsp32() {
+  static const char inicioLeitura = '[';
+  static const  char fimLeitura = ']';
+  static const  char separador = ',';
+  static bool leituraEmProgresso = false;
+  static byte setorizacao = 0;
+  static char str_ciclos[4] = "---";
+  char leituraSerial;
+  //[1,1,1,0,1,2,c,s,5]
+  //[0,0,0,2,1,0,r,a,5]
+
+  if (Serial.available() > 0) {
+    leituraSerial = Serial.read();
+
+    if (leituraEmProgresso == true) {
+      if (leituraSerial != fimLeitura) {
+       
+        if (leituraSerial == separador) {
+          setorizacao++;
+        } else {
+          switch (setorizacao) {
+            case 0:
+              Hab_V = byte(leituraSerial - '0');
+              break;
+            case 1:
+              Hab_P = byte(leituraSerial - '0');
+              break;
+            case 2:
+              Hab_M = byte(leituraSerial - '0');
+              break;
+            case 3:
+              Prat_V = byte(leituraSerial - '0');
+              break;
+            case 4:
+              Prat_P = byte(leituraSerial - '0');
+              break;
+            case 5:
+              Prat_M = byte(leituraSerial - '0');
+              break;
+            case 6:
+              Operacao = leituraSerial;
+              break;
+            case 7:
+              Ordem = leituraSerial;
+              break;
+            case 8:
+              strcat(str_ciclos, temp_leitura);
+              break;
+          }
+        }
+      } else if (leituraSerial == fimLeitura) {
+        //n_ciclos = byte(str_ciclos);
+        leituraEmProgresso = false;
+
+        /*char *concat = "Habilita V: ";
+          strcat(concat, Hab_V);*/
+
+        Serial.println(" ");
+        Serial.println(" ");
+        Serial.print("Habilita V: ");
+        Serial.println(Hab_V);
+        Serial.print("Habilita P: ");
+        Serial.println(Hab_P);
+        Serial.print("Habilita M: ");
+        Serial.println(Hab_M);
+
+        Serial.println(" ");
+        Serial.print("Prat V: ");
+        Serial.println(Prat_V);
+        Serial.print("Prat P: ");
+        Serial.println(Prat_P);
+        Serial.print("Prat M: ");
+        Serial.println(Prat_M);
+
+        Serial.println(" ");
+        Serial.print("Operacao: ");
+        Serial.println(Operacao);
+        Serial.print("Ordem: ");
+        Serial.println(Ordem);
+        Serial.print("Ciclos: ");
+        Serial.println(n_ciclos);
+        Serial.print("strCiclos: ");
+        Serial.println(str_ciclos);
+
+      }
+    } else if (leituraSerial == inicioLeitura) {
+      leituraEmProgresso = true;
+      setorizacao = 0;
+      strcpy(str_ciclos, "");
+    }
+  }
+}
