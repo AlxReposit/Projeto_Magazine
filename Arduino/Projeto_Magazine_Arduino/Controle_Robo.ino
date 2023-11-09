@@ -1579,7 +1579,7 @@ void observadorRespostaRobo() {
 }
 
 //Retorna um número aleatório entre 1 e 4, excluindo as posições que já estão ocupadas
-byte aleatorio(byte prateleira, bool encher) {
+/*byte aleatorio(byte prateleira, bool encher) {
   bool verificacao = false;
   byte minimo = 1;
   byte maximo = 4;
@@ -1600,6 +1600,35 @@ byte aleatorio(byte prateleira, bool encher) {
 
     return numero;
   } else {
+    return 0;
+  }
+}*/
+
+byte aleatorio(byte prateleira, bool colocar) {
+  bool verificacao = false;
+  byte minimo = 1;
+  byte maximo = 4;
+  byte numero = random(minimo, (maximo + 1));
+
+  if (((magazine[prateleira][0] == '-') == colocar)
+    || (magazine[prateleira][1] == '-') == colocar)
+    || (magazine[prateleira][2] == '-') == colocar) 
+    || (magazine[prateleira][3] == '-') == colocar)) {
+
+      while (!verificacao) {
+        if (posicoes[prateleira][(numero - 1)] == colocar) {
+          numero = random(minimo, (maximo + 1));
+        } else {
+          verificacao = true;
+        }
+        Serial.println("loop");
+      }
+
+      posicoes[prateleira][(numero - 1)] = colocar;
+
+      return numero;
+    }
+  else {
     return 0;
   }
 }
