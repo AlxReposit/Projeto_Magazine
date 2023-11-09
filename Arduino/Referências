@@ -1,0 +1,14 @@
+Algumas referências importantes que forma utilizadas para gerar o código do arduino:
+
+- Uso de millis() para controlar um tempo / gerar um atraso, sem parar o programa (evitando delay()), 
+  assim podendo fazer mais de uma coisa ao mesmo tempo:
+https://forum.arduino.cc/t/demonstration-code-for-several-things-at-the-same-time/217158/1
+
+- Strings() e *chars: 
+https://hackingmajenkoblog.wordpress.com/2016/02/04/the-evils-of-arduino-strings/
+
+- Comunicação Serial: 
+https://forum.arduino.cc/t/serial-input-basics-updated/382007
+
+- Função random() para gerar um número aleatório:
+https://www.arduino.cc/reference/en/language/functions/random-numbers/random/
