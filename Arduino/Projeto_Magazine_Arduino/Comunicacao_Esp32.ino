@@ -1,5 +1,6 @@
 bool enviandoDadosMagazine = false;
 
+void receberDadosConfigs();
 void receberDadosMagazine();
 void enviarDadosMagazine();
 // envia a mensagem como <{----{----{----> (todos de uma vez)
@@ -112,7 +113,7 @@ void enviarDadosMagazine(byte prateleira, byte posicao) {
   enviandoDadosMagazine = false;
 }
 
-
+//salvar em outro lugar
 void receberDadosMagazine() {
   static char inicioLeitura = '<';
   static char fimLeitura = '>';
@@ -148,7 +149,7 @@ void receberDadosMagazine() {
         } else if (setorizacao == 3) {
           pos = pos_c.toInt();
           magazine[prat][pos] = leituraSerialArduino;
-          
+
           Serial.print("prateleira: ");
           Serial.println(prat);
           Serial.print("posição: ");
@@ -185,7 +186,6 @@ void receberDadosMagazine() {
         //chegou no fim da leitura
         leituraEmProgresso = false;
         pos = 0;
-
       }
     } else if (leituraSerialArduino == inicioLeitura) {
       leituraEmProgresso = true;
@@ -194,92 +194,239 @@ void receberDadosMagazine() {
   }
 }
 
+//testar
+void receberDadosConfigs() {
+  static char inicioLeitura = '[';
+  static char fimLeitura = ']';
+  static char separador = ',';
+  static byte setorizacao = 0;
+  static bool leituraEmProgresso = false;
+  static String num_ciclos = "";
+  char leituraSerialArduino;
+
+  if (Serial.available() > 0) {
+    leituraSerialArduino = Serial.read();
+
+    if (leituraEmProgresso == true) {
+      if (leituraSerialArduino != fimLeitura) {
+
+        if (leituraSerialArduino == separador) {
+          setorizacao++;
+        }
+
+        switch (setorizacao) {
+          case 0:  // Habilita Peça Vermelha
+            Hab_V = byte(leituraSerialArduino);
+            break;
+          case 1:  // Habilita Peça Preta
+            Hab_P = byte(leituraSerialArduino);
+            break;
+          case 2:  // Habilita Peça Metálica
+            Hab_M = byte(leituraSerialArduino);
+            break;
+          case 3:  // Prateleira para Peças Vermelhas
+            Prat_V = byte(leituraSerialArduino);
+            break;
+          case 4:  // Prateleira para Peças Pretas
+            Prat_P = byte(leituraSerialArduino);
+            break;
+          case 5:  // Prateleira para Peças Metálicas
+            Prat_M = byte(leituraSerialArduino);
+            break;
+          case 6:  // Operação
+            Operacao = leituraSerialArduino;
+            break;
+          case 7:  // Ordem
+            Ordem = leituraSerialArduino;
+            break;
+          case 8:  // Ciclos
+            num_ciclos += leituraSerialArduino;
+            break;
+        }
+
+      } else {
+        //chegou no fim da leitura
+        n_ciclos = num_ciclos.toInt();
+        leituraEmProgresso = false;
+      }
+    } else if (leituraSerialArduino == inicioLeitura) {
+      leituraEmProgresso = true;
+    }
+  } else {
+  }
+}
+
+//testar
+void receberDadosStartStop() {
+  static bool leituraEmProgresso = false;
+  bool salvarStart = 0;
+  bool salvarStop = 0;
+  char leituraSerialArduino;
+
+  if (Serial.available() > 0) {
+    leituraSerialArduino = Serial.read();
+
+    if (leituraEmProgresso == true) {
+      if (salvarStart) {
+        start = leituraSerialArduino;
+      }
+      if (salvarStop) {
+        stop = leituraSerialArduino;
+      }
+
+      if (leituraSerialArduino == '!') {
+        salvarStart = 1
+      }
+      if (leituraSerialArduino == '?') {
+        salvarStop = 1;
+      }
+    } else {
+      //chegou no fim da leitura
+      leituraEmProgresso = false;
+    }
+  } else if (leituraSerialArduino == '!' || leituraSerialArduino == '?') {
+    leituraEmProgresso = true;
+  }
+}
 
 
 
 
-//---------------------------------------------- FAZER DEPOIS ----------------------------------------------
+
 
 /*
 
-  //Verifica se o Esp32 mandou sinal na estrada do arduino sinalizando que há dados a serem lidos no serial
-  void listenerReceberDadosEsp32() {
-  }
+Receber Config Esp
 
-  //Lê os dados que o Esp32 enviou ao arduino
-  //Atualiza as informações de configuração do processo
+bool Hab_V = 1;
+bool Hab_P = 1;
+bool Hab_M = 1;
 
-  //<v1>
-  //<p0>
-  //<m1>
+byte Prat_V = 1;
+byte Prat_P = 2;
+byte Prat_M = 3;
 
-  //<V1>
-  //<P2>
-  //<M3>
+//Operação
+//'c' = Encher Magazine, Colocar Peças
+//'r' = Esvaziar Magazine, Retirar Peças
+char Operacao = 'e';
 
-  //<pe> <pr>
-  //<oa> <os>
-  //<c4>
+//Ordem de Retidada e Posicionamento de Peças
+//'s' = Sequência
+//'a' = Alternado
+char Ordem = 'a';
+
+int n_ciclos = 0;
+
+void receberDadosConfigsEsp32();
+
+void setup() {
+  Serial.begin(9600);
+  Serial.println("inicio");
+}
+
+void loop() {
+  receberDadosConfigsEsp32();
+}
 
 
-  bool Hab_V = 1;
-  bool Hab_P = 1;
-  bool Hab_M = 1;
-
-  byte Prat_V = 1;
-  byte Prat_P = 2;
-  byte Prat_M = 3;
-
-  //Operação
-  //'e' = Encher Magazine, Colocar Peças
-  //'r' = Esvaziar Magazine, Retirar Peças
-  char Operacao = 'e';
-
-  //Ordem de Retidada e Posicionamento de Peças
-  //'s' = Sequência
-  //'a' = Alternado
-  char Ordem = 'a';
-
-  int ciclo_atual = 0;
-
-  void receberDadosEsp32() {
-  static char inicioLeitura = '<';
-  static char fimLeitura = '>';
-  static char marcadorPrateleira = '{';
+void receberDadosConfigsEsp32() {
+  static const char inicioLeitura = '[';
+  static const char fimLeitura = ']';
+  static const char separador = ',';
   static bool leituraEmProgresso = false;
-  static int pos = 0;
-  static int prateleira = 0;
+  static byte setorizacao = 0;
+  static char str_ciclos[4] = "---";
+  static char *ponteiro_ciclos;
   char leituraSerial;
+  //[1,1,1,0,1,2,c,s,5]
+  //[0,0,0,2,1,0,r,a,5]
 
-  if (Serial.available() > 0 && enviandoDadosMagazine == false) {
+  if (Serial.available() > 0) {
     leituraSerial = Serial.read();
-
 
     if (leituraEmProgresso == true) {
       if (leituraSerial != fimLeitura) {
 
-        if (leituraSerial == marcadorPrateleira) {
-          magazineRecebida[prateleira][pos] = '\0';
-          prateleira++;
-          pos = 0;
+        if (leituraSerial == separador) {
+          setorizacao++;
         } else {
-          magazineRecebida[prateleira][pos] = leituraSerial;
-          pos++;
+          switch (setorizacao) {
+            case 0:
+              Hab_V = byte(leituraSerial - '0');
+              break;
+            case 1:
+              Hab_P = byte(leituraSerial - '0');
+              break;
+            case 2:
+              Hab_M = byte(leituraSerial - '0');
+              break;
+            case 3:
+              Prat_V = byte(leituraSerial - '0');
+              break;
+            case 4:
+              Prat_P = byte(leituraSerial - '0');
+              break;
+            case 5:
+              Prat_M = byte(leituraSerial - '0');
+              break;
+            case 6:
+              Operacao = leituraSerial;
+              break;
+            case 7:
+              Ordem = leituraSerial;
+              break;
+            case 8:
+              char tempLeitura[2];
+              //tempLeitura[0] = leituraSerial;
+              //tempLeitura[0] = '\0';
+              //strcat(str_ciclos, tempLeitura);
+              if (ponteiro_ciclos) {
+                *ponteiro_ciclos = leituraSerial;
+                ponteiro_ciclos++;
+              }
+              break;
+          }
         }
-
       } else if (leituraSerial == fimLeitura) {
-        //chegou no fim da leitura
-        //magazine[prateleira][pos] = '\0';
+        n_ciclos = atoi(str_ciclos);
         leituraEmProgresso = false;
-        pos = 0;
-        novosDados = false;
 
-        atualizaMagazineRTDB();
+        //char *concat = "Habilita V: ";
+        // strcat(concat, Hab_V);
+
+        Serial.println(" ");
+        Serial.println(" ");
+        Serial.print("Habilita V: ");
+        Serial.println(Hab_V);
+        Serial.print("Habilita P: ");
+        Serial.println(Hab_P);
+        Serial.print("Habilita M: ");
+        Serial.println(Hab_M);
+
+        Serial.println(" ");
+        Serial.print("Prat V: ");
+        Serial.println(Prat_V);
+        Serial.print("Prat P: ");
+        Serial.println(Prat_P);
+        Serial.print("Prat M: ");
+        Serial.println(Prat_M);
+
+        Serial.println(" ");
+        Serial.print("Operacao: ");
+        Serial.println(Operacao);
+        Serial.print("Ordem: ");
+        Serial.println(Ordem);
+        Serial.print("Ciclos: ");
+        Serial.println(n_ciclos);
+        Serial.print("strCiclos: ");
+        Serial.println(str_ciclos);
       }
     } else if (leituraSerial == inicioLeitura) {
       leituraEmProgresso = true;
+      setorizacao = 0;
+      strcpy(str_ciclos, "   ");
+      ponteiro_ciclos = str_ciclos;
     }
   }
-  }
-
-*/
+}
