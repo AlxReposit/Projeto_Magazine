@@ -1,0 +1,13 @@
+Algumas referências importantes que foram utilizadas para gerar o código para o Esp32:
+
+- Biblioteca Firebase-Esp-Client usada para fazer a comunicação entre Esp32 e o projeto Firebase:
+https://github.com/mobizt/Firebase-ESP-Client
+
+- Descrição das funções disponíveis na biblioteca Firebase-Esp-Client:
+https://github.com/mobizt/Firebase-ESP-Client/blob/main/src/README.md
+
+- Artigos do site Random Nerd Tutorials:
+https://randomnerdtutorials.com/esp32-firebase-realtime-database/
+https://randomnerdtutorials.com/esp32-firebase-web-app/
+
+- Biblioteca ___ usada para comunicação com o LCD TFT ILI9341
