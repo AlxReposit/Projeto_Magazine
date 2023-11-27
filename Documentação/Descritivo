@@ -1,0 +1,32 @@
+Descritivo
+
+O processo de funcionamento da Magazine é composto por: 
+- Definição das configurações do processo pelo operador (através da IHM física ou do Aplicativo Web)
+
+  O operador pode personalizar o processo de movimentação das peças. É possível definir as seguintes possibilidades:
+   1. Qual tipo se peça será movimentada; 
+   2. Em qual prateleira o robô colocará cada tipo de peça;
+   3. A sequência da movimentação das peças: movimentando um tipo de peça por vez e seguindo a ordem das posições na Magazine, ou alternar entre os tipos de peça e escolhendo uma posição aleatória entre as disponíveis na Magazine;
+   4. A quantidade de repetições, ou ciclos, que será realizada;
+   5. Caso o processo não realize ciclos, é possível escolher se as peças serão colocadas ou removidas da Magazine, se houver peças disponíveis para realizar esses movimentos.
+  
+  Após definir como o processo irá se comportar, o operador pode acionar o comando de iniciar o processo para começar a movimentação das peças. Durante o funcionamento, há a opção de acionar o comando de "zerar ciclos", que irá parar o processo após o término do ciclo que está sendo realizado.
+
+  No Aplicativo Web, a função de personalizar o processo, iniciar e zerar ciclos só podem ser utilizadas por um usuário com perimssão para realizar essas ações.
+
+
+- Envio das configurações do processo do Esp32 para o Arduino
+  A cominucação entre Arduino e Esp32 é realizada através da porta Serial dos dispositivos. O Esp32 envia as informações em uma mensagem seguindo um padrão que é interpretado pelo Arduino, com cada informação sepadara com um caracter específico. Um exemplo de mensagem que pode ser enviada é:
+
+(0,0,0,0,0,0)
+
+  O Arduino irá interpretar a mensagem acima e definir que as configurações do processo são:
+
+
+- Controle do processo realizado pelo Arduino, com comunicação com o Robô
+
+
+- Envio de informações do processo e do estado da Magazine do Arduino para o Esp32
+
+
+- Envio de informações do processo e do estado da Magazine do Esp32 para a IHM IHM física e Aplicativo Web
