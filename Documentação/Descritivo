@@ -2,9 +2,14 @@ Descritivo
 
 O processo de funcionamento da Magazine é composto por: 
 
+1. Definição das configurações do processo pelo operador (através da IHM física ou do Aplicativo Web)
+2. Envio das configurações do processo do Esp32 para o Arduino
+3. Controle do processo realizado pelo Arduino, com comunicação com o Robô
+4. Envio de informações do processo e do estado da Magazine do Arduino para o Esp32
+5. Envio de informações do processo e do estado da Magazine do Esp32 para a IHM IHM física e Aplicativo Web
 
 
-
+As etapas são descritas com mais informações abaixo:
 
 - Definição das configurações do processo pelo operador (através da IHM física ou do Aplicativo Web)
 
@@ -26,13 +31,10 @@ O processo de funcionamento da Magazine é composto por:
   Um exemplo de mensagem que pode ser enviada é: [1,0,1,0,1,2,c,s,5]
 
   O Arduiuno interpreta a mensagem como:
-  tipo...
-  ...
-  ...
-
+ decrição de cada caracer
 
   O Arduino irá interpretar a mensagem acima e definir que as configurações do processo são:
-
+exemplo de interpret da msg
 
 - Controle do processo realizado pelo Arduino, com comunicação com o Robô
 
