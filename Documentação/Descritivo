@@ -1,6 +1,11 @@
 Descritivo
 
 O processo de funcionamento da Magazine é composto por: 
+
+
+
+
+
 - Definição das configurações do processo pelo operador (através da IHM física ou do Aplicativo Web)
 
   O operador pode personalizar o processo de movimentação das peças. É possível definir as seguintes possibilidades:
@@ -16,9 +21,15 @@ O processo de funcionamento da Magazine é composto por:
 
 
 - Envio das configurações do processo do Esp32 para o Arduino
-  A cominucação entre Arduino e Esp32 é realizada através da porta Serial dos dispositivos. O Esp32 envia as informações em uma mensagem seguindo um padrão que é interpretado pelo Arduino, com cada informação sepadara com um caracter específico. Um exemplo de mensagem que pode ser enviada é:
+  A cominucação entre Arduino e Esp32 é realizada através da porta Serial dos dispositivos. O Esp32 envia as informações em uma mensagem seguindo um padrão que é interpretado pelo Arduino, com cada informação sepadara com um caracter específico. 
 
-(0,0,0,0,0,0)
+  Um exemplo de mensagem que pode ser enviada é: [1,0,1,0,1,2,c,s,5]
+
+  O Arduiuno interpreta a mensagem como:
+  tipo...
+  ...
+  ...
+
 
   O Arduino irá interpretar a mensagem acima e definir que as configurações do processo são:
 
