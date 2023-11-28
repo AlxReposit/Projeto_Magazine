@@ -64,7 +64,7 @@ As etapas são descritas com mais informações abaixo:
 
   O Esp32 irá receber a mensagem acima e definir que:
   - O processo está em execução (recebeu a informação '1');
-  - O processo está em movimento (recebeu a informação '1');
+  - O robô está em movimento (recebeu a informação '1');
   - Restam 3 ciclos para acabar o processo atual (recebeu a informação '3');
 
   Exemplo de mensagem sobre a Magazine: <{1[1(V>
