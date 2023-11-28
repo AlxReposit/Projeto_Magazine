@@ -53,7 +53,38 @@ As etapas são descritas com mais informações abaixo:
 - Controle do processo realizado pelo Arduino, com comunicação com o Robô
 
 
+
 - Envio de informações do processo e do estado da Magazine do Arduino para o Esp32
+  Novamente usa-se a comunicação Serial para enviar dados entre os dispositivos. O Arduino informa o Esp32 se o processo está em execução, se o robô está ou não em movimento, e a quantidade de ciclos restantes para o término do processo, além de enviar uma mensagem smepre que uma peça é colocada ou retirada de uma posição da Magazine.
+
+  Exemplo de mensagem sobre o processo: {1,1,3}
+  '{' - indica o início da mensagem
+  '}' - indica o fim da mensagem
+  ',' - indica o fim da informação anterior, usado como separador entre as informações enviadas
+
+  O Esp32 irá receber a mensagem acima e definir que:
+  - O processo está em execução (recebeu a informação '1');
+  - O processo está em movimento (recebeu a informação '1');
+  - Restam 3 ciclos para acabar o processo atual (recebeu a informação '3');
+
+  Exemplo de mensagem sobre a Magazine: <{1[1(V>
+  '<' - indica o início da mensagem
+  '>' - indica o fim da mensagem
+  '{' - indica que a próxima informação a ser lida se refere ao número da prateleira
+  '[' - indica que a próxima informação a ser lida se refere ao número da posição
+  '(' - indica que a próxima informação a ser lida se refere ao tipo de peça (pode receber 'V' para peças vermelhas, 'P' para peças pretas, 'M' para peças metálicas, e '-' quando a posição está vazia)
+
+  O Esp32 irá receber a mensagem acima e definir que:
+  - A segunda posição da segunda prateleira agora está ocupada com uma peça Vermelha (os índices iniciam em 0, por isso a primeira posição é '0', a segunda é '1', e assim por diante)
 
 
 - Envio de informações do processo e do estado da Magazine do Esp32 para a IHM IHM física e Aplicativo Web
+  Toda vez que recebe novas informações, o Esp32 as envia para 
+
+
+
+
+
+Firebase e Esp32
+
+Para salvar e receber informações 
