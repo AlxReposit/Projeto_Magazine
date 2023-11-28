@@ -16,7 +16,7 @@ As etapas são descritas com mais informações abaixo:
   O operador pode personalizar o processo de movimentação das peças. É possível definir as seguintes possibilidades:
    1. Qual tipo se peça será movimentada; 
    2. Em qual prateleira o robô colocará cada tipo de peça;
-   3. A sequência da movimentação das peças: movimentando um tipo de peça por vez e seguindo a ordem das posições na Magazine, ou alternar entre os tipos de peça e escolhendo uma posição aleatória entre as disponíveis na Magazine;
+   3. A sequência da movimentação das peças: movimentando um tipo de peça por vez e seguindo a ordem das posições na Magazine (definido como tipo "Sequência"), ou alternar entre os tipos de peça e escolhendo uma posição aleatória entre as disponíveis na Magazine (definido como tipo "Aleatório");
    4. A quantidade de repetições, ou ciclos, que será realizada;
    5. Caso o processo não realize ciclos, é possível escolher se as peças serão colocadas ou removidas da Magazine, se houver peças disponíveis para realizar esses movimentos.
   
@@ -31,10 +31,24 @@ As etapas são descritas com mais informações abaixo:
   Um exemplo de mensagem que pode ser enviada é: [1,0,1,0,1,2,c,s,5]
 
   O Arduiuno interpreta a mensagem como:
- decrição de cada caracer
+  '[' - indica o início da mensagem
+  ']' - indica o fim da mensagem
+  ',' - indica o fim da informação anterior, usado como separador entre as informações enviadas
 
-  O Arduino irá interpretar a mensagem acima e definir que as configurações do processo são:
-exemplo de interpret da msg
+  O Arduino irá receber a mensagem acima e definir que as configurações do processo são:
+  - Movimentação de Peças Vermelhas: Habilitado (recebeu a informação '1');
+  - Movimentação de Peças Pretas:  Desabilitado (recebeu a informação '0');
+  - Movimentação de Peças Vermelhas: Habilitado (recebeu a informação '1');
+
+  - Prateleira para qual serão movimentadas as Peças Vermelhas: 1 (recebeu a informação '0');
+  - Prateleira para qual serão movimentadas as Peças Pretas:    2 (recebeu a informação '1');
+  - Prateleira para qual serão movimentadas as Peças Metálicas: 3 (recebeu a informação '2');
+  // Tipo de Peça na Preteleira 3: Metálica (recebeu a informação 'M');
+
+  - Tipo de Movimento a ser realizado: Colocar Peças (recebeu a informação 'c');
+  - Tipo de Sequência a ser seguida: Sequência (recebeu a informação 's');
+  - Quantidade de Ciclos a serem realizados: 5 (recebeu a informação '5');
+
 
 - Controle do processo realizado pelo Arduino, com comunicação com o Robô
 
