@@ -43,7 +43,6 @@ As etapas são descritas com mais informações abaixo:
   - Prateleira para qual serão movimentadas as Peças Vermelhas: 1 (recebeu a informação '0');
   - Prateleira para qual serão movimentadas as Peças Pretas:    2 (recebeu a informação '1');
   - Prateleira para qual serão movimentadas as Peças Metálicas: 3 (recebeu a informação '2');
-  // Tipo de Peça na Preteleira 3: Metálica (recebeu a informação 'M');
 
   - Tipo de Movimento a ser realizado: Colocar Peças (recebeu a informação 'c');
   - Tipo de Sequência a ser seguida: Sequência (recebeu a informação 's');
@@ -67,10 +66,12 @@ As etapas são descritas com mais informações abaixo:
   - O robô está em movimento (recebeu a informação '1');
   - Restam 3 ciclos para acabar o processo atual (recebeu a informação '3');
 
-  Exemplo de mensagem sobre a Magazine: <{1[1(V>
+  Exemplo de mensagem sobre a Magazine: <1;1;V>
   '<' - indica o início da mensagem
   '>' - indica o fim da mensagem
-  '{' - indica que a próxima informação a ser lida se refere ao número da prateleira
+  ';' - indica o fim da informação anterior, usado como separador entre as informações enviadas
+
+indica que a próxima informação a ser lida se refere ao número da prateleira
   '[' - indica que a próxima informação a ser lida se refere ao número da posição
   '(' - indica que a próxima informação a ser lida se refere ao tipo de peça (pode receber 'V' para peças vermelhas, 'P' para peças pretas, 'M' para peças metálicas, e '-' quando a posição está vazia)
 
