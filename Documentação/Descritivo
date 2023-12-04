@@ -3,7 +3,7 @@ Descritivo
 O processo de funcionamento da Magazine é composto por: 
 
 1. Definição das configurações do processo pelo operador (através da IHM física ou do Aplicativo Web)
-2. Envio das configurações do processo do Esp32 para o Arduino
+2. Envio das configurações e início de processo do Esp32 para o Arduino
 3. Controle do processo realizado pelo Arduino, com comunicação com o Robô
 4. Envio de informações do processo e do estado da Magazine do Arduino para o Esp32
 5. Envio de informações do processo e do estado da Magazine do Esp32 para a IHM IHM física e Aplicativo Web
@@ -24,8 +24,9 @@ As etapas são descritas com mais informações abaixo:
   No Aplicativo Web, a função de personalizar o processo, iniciar e zerar ciclos só podem ser utilizadas por um usuário com perimssão para realizar essas ações.
 
 
-2. Envio das configurações do processo do Esp32 para o Arduino
+2. Envio das configurações e início de processo do Esp32 para o Arduino
   A cominucação entre Arduino e Esp32 é realizada através da porta Serial dos dispositivos. O Esp32 envia as informações em uma mensagem seguindo um padrão que é interpretado pelo Arduino, com cada informação sepadara com um caracter específico. 
+  As configurações são enviadas quando o operador aperta o botão de iniciar processo, ou quando o Esp32 recebe esse comando do aplicativo web.
 
   Um exemplo de mensagem que pode ser enviada é: [1,0,1,0,1,2,c,s,5]
 
@@ -49,8 +50,18 @@ As etapas são descritas com mais informações abaixo:
   - Tipo de Sequência a ser seguida: Sequência (recebeu a informação 's');
   - Quantidade de Ciclos a serem realizados: 5 (recebeu a informação '5');
 
+  Para iniciar o processo, o Esp32 envia o caracter '!' pela porta Serial.
+
 
 3. Controle do processo realizado pelo Arduino, com comunicação com o Robô
+  Antes de iniciar o processo, o Arduino recebe as configurações com os valores das variáveis que irá utilizar no algorítimo. Quando o Arduino recebe o caracter '!' pela porta Serial, o processo é iniciado.
+  Durente o processo, pode receber o caracter '?', representando o comando de "Zerar Ciclos", que reduz a quantidade de ciclos restantes atá o fim do processo apra que ele termine ao fim do ciclo que está sendo feito no momento.
+ 
+  1º: O software identifica o número de ciclos. Caso seja entre 1 e 10, realiza a quantidade de ciclos recebida; caso seja 200, realiza os ciclos até que o Arduino receba o comando de "Zerar Ciclos"; caso seja 150, realiza apenas o movimento de colocar ou de remover peças da Magazine.
+
+  2º:
+
+
 
 
 
