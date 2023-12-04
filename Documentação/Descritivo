@@ -11,8 +11,7 @@ O processo de funcionamento da Magazine é composto por:
 
 As etapas são descritas com mais informações abaixo:
 
-- Definição das configurações do processo pelo operador (através da IHM física ou do Aplicativo Web)
-
+1. Definição das configurações do processo pelo operador (através da IHM física ou do Aplicativo Web)
   O operador pode personalizar o processo de movimentação das peças. É possível definir as seguintes possibilidades:
    1. Qual tipo se peça será movimentada; 
    2. Em qual prateleira o robô colocará cada tipo de peça;
@@ -25,7 +24,7 @@ As etapas são descritas com mais informações abaixo:
   No Aplicativo Web, a função de personalizar o processo, iniciar e zerar ciclos só podem ser utilizadas por um usuário com perimssão para realizar essas ações.
 
 
-- Envio das configurações do processo do Esp32 para o Arduino
+2. Envio das configurações do processo do Esp32 para o Arduino
   A cominucação entre Arduino e Esp32 é realizada através da porta Serial dos dispositivos. O Esp32 envia as informações em uma mensagem seguindo um padrão que é interpretado pelo Arduino, com cada informação sepadara com um caracter específico. 
 
   Um exemplo de mensagem que pode ser enviada é: [1,0,1,0,1,2,c,s,5]
@@ -34,6 +33,8 @@ As etapas são descritas com mais informações abaixo:
   '[' - indica o início da mensagem
   ']' - indica o fim da mensagem
   ',' - indica o fim da informação anterior, usado como separador entre as informações enviadas
+
+  As primeiras três informações lidas se referem a se as peças de cada tipo estão habilitadas para movimentação (0 [falso] ou 1 [verdadeiro]); da 4ª à 6ª, às prateleiras de cada tipo de peça (0, 1 ou 2); a 7ª, ao tipo de movimento a ser realizado (Colocar ou Remover peças); a 8ª, ao tipo de sequência a ser seguida (Sequência ou Aleatório); e a 9ª, à quantidade de ciclos a serem realizados.
 
   O Arduino irá receber a mensagem acima e definir que as configurações do processo são:
   - Movimentação de Peças Vermelhas: Habilitado (recebeu a informação '1');
@@ -49,11 +50,12 @@ As etapas são descritas com mais informações abaixo:
   - Quantidade de Ciclos a serem realizados: 5 (recebeu a informação '5');
 
 
-- Controle do processo realizado pelo Arduino, com comunicação com o Robô
+3. Controle do processo realizado pelo Arduino, com comunicação com o Robô
 
 
 
-- Envio de informações do processo e do estado da Magazine do Arduino para o Esp32
+
+4. Envio de informações do processo e do estado da Magazine do Arduino para o Esp32
   Novamente usa-se a comunicação Serial para enviar dados entre os dispositivos. O Arduino informa o Esp32 se o processo está em execução, se o robô está ou não em movimento, e a quantidade de ciclos restantes para o término do processo, além de enviar uma mensagem smepre que uma peça é colocada ou retirada de uma posição da Magazine.
 
   Exemplo de mensagem sobre o processo: {1,1,3}
@@ -61,31 +63,32 @@ As etapas são descritas com mais informações abaixo:
   '}' - indica o fim da mensagem
   ',' - indica o fim da informação anterior, usado como separador entre as informações enviadas
 
+  A 1ª informação lida se refere a se o processo está ou não em execução, a 2ª, a se o robô está em movimento ou parado; e a 3ª, ao número de ciclos restantes.
+
   O Esp32 irá receber a mensagem acima e definir que:
   - O processo está em execução (recebeu a informação '1');
   - O robô está em movimento (recebeu a informação '1');
   - Restam 3 ciclos para acabar o processo atual (recebeu a informação '3');
 
   Exemplo de mensagem sobre a Magazine: <1;1;V>
-  '<' - indica o início da mensagem
-  '>' - indica o fim da mensagem
-  ';' - indica o fim da informação anterior, usado como separador entre as informações enviadas
+  '<' - indica o início da mensagem;
+  '>' - indica o fim da mensagem;
+  ';' - indica o fim da informação anterior, usado como separador entre as informações enviadas;
 
-indica que a próxima informação a ser lida se refere ao número da prateleira
-  '[' - indica que a próxima informação a ser lida se refere ao número da posição
-  '(' - indica que a próxima informação a ser lida se refere ao tipo de peça (pode receber 'V' para peças vermelhas, 'P' para peças pretas, 'M' para peças metálicas, e '-' quando a posição está vazia)
+  A 1ª informação lida se refere ao número da prateleira, a 2ª, ao número da posição, e a 3ª, ao tipo de peça (pode receber 'V' para peças vermelhas, 'P' para peças pretas, 'M' para peças metálicas, e '-' quando a posição está vazia).
 
   O Esp32 irá receber a mensagem acima e definir que:
   - A segunda posição da segunda prateleira agora está ocupada com uma peça Vermelha (os índices iniciam em 0, por isso a primeira posição é '0', a segunda é '1', e assim por diante)
 
 
-- Envio de informações do processo e do estado da Magazine do Esp32 para a IHM IHM física e Aplicativo Web
-  Toda vez que recebe novas informações, o Esp32 as envia para 
-
-
+5. Envio de informações do processo e do estado da Magazine do Esp32 para a IHM física e Aplicativo Web
+  Toda vez que recebe novas informações sobre o processo, configurações (da IHM física), e posições da Magazine, o Esp32 as atualiza no banco de dados do Firebase (Realtime Database) utilizando as funções da bibloteca Firebase Esp Client.
+  As telas da IHM física também são atualizadas com essas mesmas informações: a tela "Sobre", mostrando o estado do processo; a tela "Configurações", onde o operador pode personalizar o funcionamento do processo; e a tela "Informações", que mostra detalhes do projeto e instruções sobre como usar a IHM física.
 
 
 
 Firebase e Esp32
+
+
 
 Para salvar e receber informações 
