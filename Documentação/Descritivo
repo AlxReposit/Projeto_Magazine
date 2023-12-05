@@ -72,13 +72,23 @@ As etapas são descritas com mais informações abaixo:
 
   Essas funções são uma garantia de que um movimento errado não será realizado pelo robô, o que poderia causar estragos no projeto.
 
-  - Seleção de Movimento. As funções para selecionar o movimento do robô consistem em ativar 6 relês em uma ordem específica, enviando um conjunto de 6 sinais de 0 (relês desativados) e 1 (relês ativados), gerando uma sequência binária. Cada código binário tem um movimento correspondente, que o robô executa após ler esses sinais. As sequências utilizadas e seus moviemntos podem ser encontrados em detalhe no anexo X.
+  - Seleção de Movimento. As funções para selecionar o movimento consistem em ativar 6 relês em uma ordem específica, enviando um conjunto de 6 sinais de 0 (relês desativados) e 1 (relês ativados) nas entradas digitais do controlador do robô, gerando uma sequência binária. Cada código binário tem um movimento correspondente, que o robô executa após ler esses sinais. As sequências utilizadas e seus moviemntos podem ser encontrados em detalhe no anexo X.
 
 
   3: Movimentação de Peças em Sequência.
-    .
+    Esse estágio do processo é realizada com setorização. É usada uma variável (com valor de 0, 1, 2, ou 3) que representa cada setor, ou etapa, da movimentação de peças: 0 é a etapa de movimentação de peças vermelhas; 1, de peças pretas; 2, de peças metálicas; e 3, finaliza a movimentação de peças e passa para o próximo passo no processo. 
+ - - - - - - - - - - - - - - - ? 
+    Esse método é necessário pois o Arduino precisa esperar um tempo para que o robô realize os movimentos, então ele entra em um setor de "espera" até que o robô termine sua função, e ao mesmo tempo consegue realizar outras ações, como receber o comando de "Zerar Ciclos"
+ - - - - - - - - - - - - - - - ? 
+    Nas três primeiras etapas, são chamadas as funções de colocar e remover peças, que possuem suas próprias setorizações e são responsáveis por selecionar, verificar e habilitar o movimento que o robô irá realizar, e receber um sinal quando o robô terminar o movimento.
 
       3.1: Colocar Peças:
+      No início da movimentação de cada tipo de peça, define-se que a posição usada é 1. A setorização dessa função acontece na sequinte ordem: 
+      - Setor 0: Verifica se o movimento de buscar a peça na base (considerando o tipo de peça e a posição atual) é válido, se sim, executa a função de selecionar o movimento para ativar os relês de comunicação com o robô. Após isso, passa para o próximo setor.
+      - Setor 1: Caso o robô esteja parado, executa a função de habilitar a leitura da sequência de seleção de movimento, que envia um sinal para uma entrada digital do robô, permitindo que ele inicie o moviemento escolhido. Depois, passa para o próximo setor, ao mesmo tempo que espera pelo sinal que o robô envia quando ele finalizar o movimento.
+      - Setor 2: Verifica se o movimento de colocar a peça na Magazine (considerando a prateleira escolhida para o tipo de peça e a posição atual) é válido, se sim, executa a função de selecionar o movimento. Após isso, passa para o próximo setor.
+      - Setor 3: Possui a mesma função do Setor 1, com a diferença de que aqui é enviado a mudança no estado da magazine para o Esp32 utilizando a comunicação Serial (explicado com mais detalhes no ponto/tópico 4.).
+      - Setor 4: .
 
       3.2: Remover Peças:
 
