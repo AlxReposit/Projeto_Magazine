@@ -113,16 +113,14 @@ As etapas são descritas com mais informações abaixo:
       - Setor 4: Mesmo funcionamento de "Colocar Peças" (tópico 3.1).
 
       4.3: Remover Peças:
-      
       - Setor 0: Verifica se o movimento de buscar a peça na Magazine (considerando a prateleira escolhida para o tipo de peça e a posição escolhida aleatoriamente) é válido, se sim, executa a função de selecionar o movimento e passa para o próximo setor.
       - Setor 1: Mesmo funcionamento de "Remover Peças" (tópico 3.2).
       - Setor 2: Verifica se o movimento de colocar a peça base do Robô (considerando o tipo de peça e a posição atual) é válido, se sim, executa a função de selecionar o movimento e passa para o próximo setor.
       - Setor 3: Mesmo funcionamento de "Remover Peças" (tópico 3.2).
       - Setor 4: Mesmo funcionamento de "Remover Peças" (tópico 3.2).
 
-      4.3: Remover Peças:
-
-  5: 
+  5: Fim do Ciclo Atual
+  Após o término da movimentação de todas as peças com "Colocar" ou "Remover"
 
 
 
