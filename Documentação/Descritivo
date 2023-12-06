@@ -119,8 +119,8 @@ As etapas são descritas com mais informações abaixo:
       - Setor 3: Mesmo funcionamento de "Remover Peças" (tópico 3.2).
       - Setor 4: Mesmo funcionamento de "Remover Peças" (tópico 3.2).
 
-  5: Fim do Ciclo Atual
-  Após o término da movimentação de todas as peças com "Colocar" ou "Remover"
+  5: Fim da Movimentação das Peças
+  Após o término da movimentação de todas as peças com "Colocar" ou "Remover", o tipo de movimento é invertido para continuar os ciclos. Caso o operador tenha selecionado apenas colocar ou remover as peças, sem ciclos, o programa finaliza e aguarda o recebimento de novas instruções.
 
 
 
