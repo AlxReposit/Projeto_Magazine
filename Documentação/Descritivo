@@ -8,7 +8,6 @@ O processo de funcionamento da Magazine é composto por:
 4. Envio de informações do processo e do estado da Magazine do Arduino para o Esp32
 5. Envio de informações do processo e do estado da Magazine do Esp32 para a IHM IHM física e Aplicativo Web
 
-
 As etapas são descritas com mais informações abaixo:
 
 1. Definição das configurações do processo pelo operador (através da IHM física ou do Aplicativo Web)
@@ -123,12 +122,6 @@ As etapas são descritas com mais informações abaixo:
   Após o término da movimentação de todas as peças com "Colocar" ou "Remover", o tipo de movimento é invertido para continuar os ciclos. Caso o operador tenha selecionado apenas colocar ou remover as peças, sem ciclos, o programa finaliza e aguarda o recebimento de novas instruções.
 
 
-
-
-
-
-
-
 4. Envio de informações do processo e do estado da Magazine do Arduino para o Esp32
   Novamente usa-se a comunicação Serial para enviar dados entre os dispositivos. O Arduino informa o Esp32 se o processo está em execução, se o robô está ou não em movimento, e a quantidade de ciclos restantes para o término do processo, além de enviar uma mensagem smepre que uma peça é colocada ou retirada de uma posição da Magazine.
 
@@ -162,6 +155,16 @@ As etapas são descritas com mais informações abaixo:
 
 
 Firebase e Esp32
+
+Esp32
+- funções de comunicação (set, update, stream...)
+
+Site
+- páginas e funções
+
+RTDB
+- Estrutura
+- Regras de Segurança
 
 
 
