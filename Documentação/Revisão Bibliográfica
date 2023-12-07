@@ -1,6 +1,19 @@
 - Arduino
 
 - ESP32
+O ESP32 possui comunicação Bluetooth e também acesso a rede via WiFi, com isso é possível desenvolver a partir dele uma gama maior de variedade de projetos IoT. O WiFi suporta uma taxa de 150Mbps e potencia de 20,5 dBm na antena, permitindo e conexão direta à internet. O Bluetooth BLE permite que qualquer celular se conecte a ele enviando diversos tipos de informação com baixo consumo de energia.
+
+Possui um sistema operacional FreeRTOS (sistema operacional de tempo real), e capacidade de atualização de firmware pelo WiFi (Ota – Over The Air) assim permitindo atualizações constantes em seus projetos.
+
+É um módulo muito poderoso tanto em capacidade de processamento quanto em memória (RAM e Flash), e dispensa o uso de qualquer Arduino, pois além de tradicionalmente possuir interface de comunicação, portas GPIO, canais de conversores A-D e sensores internos, é uma placa que integra comunicação Bluetooth e WiFi. È uma plataforma completa para desenvolvimento de projetos tanto simples quanto mais complexos voltados a automações e a IoT.
+
+https://www.baudaeletronica.com.br/produto/placa-doit-esp32-bluetooth-e-wifi.html
+
+ESP32 é uma série de microcontroladores de baixo custo e baixo consumo de energia. Também é um sistema-em-um-chip com microcontrolador integrado, Wi-Fi e Bluetooth. Foi criado e desenvolvido por Espressif Sistemas.
+
+https://pt.wikipedia.org/wiki/ESP32
+
+
 
 - LCD TFT ILI
 
