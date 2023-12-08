@@ -76,9 +76,7 @@ As etapas são descritas com mais informações abaixo:
 
   3: Movimentação de Peças em Sequência.
     Esse estágio do processo é realizada com setorização. É usada uma variável (com valor de 0, 1, 2, ou 3) que representa cada setor, ou etapa, da movimentação de peças: 0 é a etapa de movimentação de peças vermelhas; 1, de peças pretas; 2, de peças metálicas; e 3, finaliza a movimentação de peças e passa para o próximo passo no processo. 
- - - - - - - - - - - - - - - - ? 
-    Esse método é necessário pois o Arduino precisa esperar um tempo para que o robô realize os movimentos, então ele entra em um setor de "espera" até que o robô termine sua função, e ao mesmo tempo consegue realizar outras ações, como receber o comando de "Zerar Ciclos".
- - - - - - - - - - - - - - - - ? 
+    Esse método é necessário, pois o Arduino precisa esperar um tempo para que o robô realize os movimentos, então ele continua no mesmo setor até que todas as ações da etapa sejam concluídas, e ao mesmo tempo consegue realizar outras ações, como receber o comando de "Zerar Ciclos".
     Nas três primeiras etapas, são chamadas as funções de colocar e remover peças, que possuem suas próprias setorizações e são responsáveis por selecionar, verificar e habilitar o movimento que o robô irá realizar, e receber um sinal quando o robô terminar o movimento.
 
       3.1: Colocar Peças:
