@@ -2,15 +2,15 @@ Descritivo
 
 O processo de funcionamento da Magazine é composto por: 
 
-1. Definição das configurações do processo pelo operador (através da IHM física ou do Aplicativo Web)
+1. Definição das configurações do processo pelo operador (através da IHM física ou do Site)
 2. Envio das configurações e início de processo do Esp32 para o Arduino
 3. Controle do processo realizado pelo Arduino, com comunicação com o Robô
 4. Envio de informações do processo e do estado da Magazine do Arduino para o Esp32
-5. Envio de informações do processo e do estado da Magazine do Esp32 para a IHM IHM física e Aplicativo Web
+5. Envio de informações do processo e do estado da Magazine do Esp32 para a IHM IHM física e Site
 
 As etapas são descritas com mais informações abaixo:
 
-1. Definição das configurações do processo pelo operador (através da IHM física ou do Aplicativo Web)
+1. Definição das configurações do processo pelo operador (através da IHM física ou do Site)
   O operador pode personalizar o processo de movimentação das peças. É possível definir as seguintes possibilidades:
    1. Qual tipo se peça será movimentada; 
    2. Em qual prateleira o robô colocará cada tipo de peça;
@@ -20,12 +20,14 @@ As etapas são descritas com mais informações abaixo:
   
   Após definir como o processo irá se comportar, o operador pode acionar o comando de iniciar o processo para começar a movimentação das peças. Durante o funcionamento, há a opção de acionar o comando de "zerar ciclos", que irá parar o processo após o término do ciclo que está sendo realizado.
 
-  No Aplicativo Web, a função de personalizar o processo, iniciar e zerar ciclos só podem ser utilizadas por um usuário com perimssão para realizar essas ações.
+  No Site, a função de personalizar o processo, iniciar e zerar ciclos só podem ser utilizadas por um usuário com perimssão para realizar essas ações. O Esp32 monitora mudanças nas informações de "Início", "Zera Ciclos" e "Novas configurações", localizadas no banco de dados da plataforma do Firebase, assim, quando elas são atualizadas pelo Site, o Esp32 envia essas informações para o Arduino.
+
+  Para inserir, atualizar e monitorar mudanças em informações do banco de dados do Firebase (chamado de Realtime Database, ou Banco de Dados em Tempo Real), são usadas funções da biblioteca Firebase Esp Client, que faz a conexão entre o Esp32 e a plataforma Firebase utilizando o protocolo de comunicação HTTP.
 
 
 2. Envio das configurações e início de processo do Esp32 para o Arduino
   A cominucação entre Arduino e Esp32 é realizada através da porta Serial dos dispositivos. O Esp32 envia as informações em uma mensagem seguindo um padrão que é interpretado pelo Arduino, com cada informação sepadara com um caracter específico. 
-  As configurações são enviadas quando o operador aperta o botão de iniciar processo, ou quando o Esp32 recebe esse comando do aplicativo web.
+  As configurações são enviadas quando o operador aperta o botão de iniciar processo, ou quando o Esp32 recebe esse comando do Site.
 
   Um exemplo de mensagem que pode ser enviada é: [1,0,1,0,1,2,c,s,5]
 
@@ -146,24 +148,20 @@ As etapas são descritas com mais informações abaixo:
   - A segunda posição da segunda prateleira agora está ocupada com uma peça Vermelha (os índices de peças e prateleiras iniciam em 0, por isso a primeira posição é '0', a segunda é '1', e assim por diante).
 
 
-5. Envio de informações do processo e do estado da Magazine do Esp32 para a IHM física e Aplicativo Web
-  Toda vez que recebe novas informações sobre o processo, configurações (da IHM física), e posições da Magazine, o Esp32 as atualiza no banco de dados do Firebase (Realtime Database) utilizando as funções da bibloteca Firebase Esp Client.
+5. Envio de informações do processo e do estado da Magazine do Esp32 para a IHM física e Site
+  Toda vez que recebe novas informações sobre o processo, configurações (da IHM física), e posições da Magazine, o Esp32 as atualiza no banco de dados do Firebase utilizando as funções da bibloteca Firebase Esp Client.
   As telas da IHM física também são atualizadas com essas mesmas informações: a tela "Sobre", mostrando o estado do processo; a tela "Configurações", onde o operador pode personalizar o funcionamento do processo; e a tela "Informações", que mostra detalhes do projeto e instruções sobre como usar a IHM física.
 
 
+Realtime Database - Estrutura dos Dados e Regras de Segurança
+  Os dados do banco de dados estão estruturados e são modificados como é mostrado do diagrama abaixo:
 
-Firebase e Esp32
+  <>
 
-Esp32
-- funções de comunicação (set, update, stream...)
-
-Site
-- páginas e funções
-
-RTDB
-- Estrutura
-- Regras de Segurança
+  As regras de regurança definem quem pode ler e escrever/alterar informações nesses campos:
+  - Magazine: Apenas o Esp32 pode escrever; a leitura não possui restrição.
+  - Configurações: Apenas o Esp32 e um usuário com permissão podem ler e escrever.
+  - Estado do Processo: Apenas o Esp32 pode escrever; a leitura não possui restrição.
+  - Stream:  Apenas o Esp32 e um usuário com permissão pode escrever; apenas o Esp32 pode realizar a leitura.
 
 
-
-Para salvar e receber informações 
