@@ -1,8 +1,7 @@
 - Arduino
-Arduino UNO is a microcontroller board based on the ATmega328P. It has 14 digital input/output pins (of which 6 can be used as PWM outputs), 6 analog inputs, a 16 MHz ceramic resonator, a USB connection, a power jack, an ICSP header and a reset button. It contains everything needed to support the microcontroller; simply connect it to a computer with a USB cable or power it with a AC-to-DC adapter or battery to get started. You can tinker with your UNO without worrying too much about doing something wrong, worst case scenario you can replace the chip for a few dollars and start over again.
+Arduino UNO é uma placa baseada no microcontrolador ATmega328P. Possui 14 pinos de entradas/saídas digitais (dos quais 6 podem ser usados como saídas PWM), 6 entradas analógicas, um ressonador cerâmico de 16 MHz, conexão USB, conector de alimentação, um ICSP header, e um botão de reset. Contém todos os componentes necessários ao microcontrolador, permitindo apenas conectar ao computador com um cabo USB ou energizar utilizando uma fonte ou bateria para iniciar.
 
-traduzir
-https://docs.arduino.cc/hardware/uno-rev3
+https://docs.arduino.cc/hardware/uno-rev3 - Traduzido
 
 - ESP32
 O ESP32 possui comunicação Bluetooth e também acesso a rede via WiFi, com isso é possível desenvolver a partir dele uma gama maior de variedade de projetos IoT. O WiFi suporta uma taxa de 150Mbps e potencia de 20,5 dBm na antena, permitindo e conexão direta à internet. O Bluetooth BLE permite que qualquer celular se conecte a ele enviando diversos tipos de informação com baixo consumo de energia.
@@ -11,15 +10,14 @@ O ESP32 possui comunicação Bluetooth e também acesso a rede via WiFi, com iss
 
 https://www.baudaeletronica.com.br/produto/placa-doit-esp32-bluetooth-e-wifi.html
 
-ESP32 é uma série de microcontroladores de baixo custo e baixo consumo de energia. Também é um sistema-em-um-chip com microcontrolador integrado, Wi-Fi e Bluetooth. Foi criado e desenvolvido por Espressif Sistemas.
-
-https://pt.wikipedia.org/wiki/ESP32
 
 
-
-- LCD TFT ILI
+- Display TFT ILI9341
+Display controlado pelo módulo ILI9341, que permite controlar os pixels presentes na tela para formar textos e imagens.
 
 - Botão de Pulso
+
+Botão que fecha um contato elétrico quando pressionado.
 
 - Shield de Relês 5V
 
