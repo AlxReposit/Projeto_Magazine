@@ -1,138 +1,33 @@
 // - - - - - - - - - - - - - - - - - - -
-//Mapeamento de Hardware
-// - - - - - - - - - - - - - - - - - - -
-#define pino_resposta 19
-#define pino_hab_movimento 12
-#define pino_bit_6 11
-#define pino_bit_5 10
-#define pino_bit_4 9
-#define pino_bit_3 8
-#define pino_bit_2 7
-#define pino_bit_1 6
-#define pino_start 18
-
-// - - - - - - - - - - - - - - - - - - -
-//Funções
-// - - - - - - - - - - - - - - - - - - -
-void movimentos_em_ciclo();
-void processoMagazineRobo(bool);
-void processoMagazineSequencia(char);
-void magazineSequenciaColocar(char);
-void magazineSequenciaRemover(char);
-void processoMagazineAlternado(char);
-void magazineAlternado(char, char);
-void Pega_Peca_Base(char, byte);
-void Leva_Peca_Magazine(byte, byte);
-void Pega_Peca_Magazine(byte, byte);
-void Leva_Peca_Base(char, byte);
-void habilitaMovimento();
-void observadorRespostaRobo();
-byte aleatorio(byte, bool);
-bool verificaMovimentoMagazine(char, byte, bool);
-bool verificaMovimentoBase(char, byte, bool);
-void tratamentoErro(char);
-void enviarDadosMagazine(byte, byte);
-
-// - - - - - - - - - - - - - - - - - - -
-//Variáveis do Processo
-// - - - - - - - - - - - - - - - - - - -
-
-//Tipo de Peça
-bool Hab_V = 1;
-bool Hab_P = 1;
-bool Hab_M = 1;
-
-//Tipo de Peça em cada Prateleira
-byte Prat_V = 0;
-byte Prat_P = 1;
-byte Prat_M = 2;
-
-//Quantidade de Peças a serem Separadas
-const byte Qtde = 4;
-
-//Operação
-//'c' = Encher Magazine, Colocar Peças
-//'r' = Esvaziar Magazine, Retirar Peças
-char Operacao = 'c';
-
-//Ordem de Retidada e Posicionamento de Peças
-//'s' = Sequência
-//'a' = Alternado
-char Ordem = 's';
-
-//Número de Ciclos de movimentos que o robô vai realizar
-//entre 1 e 100 => ciclos definidos pelo número
-//150  => sem ciclos (apenas o movimento de colocar ou de remover peças)
-//200 => ciclos infinitos
-//Máximo de ciclos: 100
-byte n_ciclos = 0;
-
-//guarda quantos ciclos faltam até acabar o processo
-//101 => não inicializado (guarda o valor de n_ciclos no início do processo)
-//0 => fim dos ciclos
-byte ciclo_atual = 0;
-
-// - - - - - - - - - - - - - - - - - - -
 //Variáveis de Controle do Processo
 // - - - - - - - - - - - - - - - - - - -
+bool ATIVAR = LOW;      // Relês ligam em LOW
+bool DESATIVAR = HIGH;  // e desligam em HIGH
 
-//Estado da Magazine
-char magazine[3][5] = {
-  "----",
-  "----",
-  "----"
-};
-
-//Estado da Base de peças do Robô
-bool baseRobo[3][4] = {
-  { true, true, true, true },
-  { true, true, true, true },
-  { true, true, true, true }
-};
-
-/*//Estado da Magazine
-char magazine[3][5] = {
-  "VVVV",
-  "PPPP",
-  "MMMM"
-};
-
-//Estado da Base de peças do Robô
-bool baseRobo[3][4] = {
-  { false, false, false, false },
-  { false, false, false, false },
-  { false, false, false, false }
-};*/
-
-//Controle de posições aleatórias
-bool posicoes[3][4] = {
-  { false, false, false, false },
-  { false, false, false, false },
-  { false, false, false, false }
-};
-
-bool ATIVAR = HIGH;    // Relês ligam em LOW
-bool DESATIVAR = LOW;  // e desligam em HIGH
-
-//Informa se o processo de movimentação de peças está em execução
-bool processo_em_andamento = false;
-
-//Robô em movimento
-// 'true' se uma função de ativar um movimento no robô foi acionada
-// 'false' quando o robô enviar um sinal dizendo que terminou o movimento, e então libera o próximo
-bool robo_em_movimento = false;
+bool btn_start = 0;
+bool btn_stop = 0;
 
 // Espera um tempo antes de liberar a próxima ação para dar tempo de desligar a resposta do robô
 // Grava o momento em que o movimento iniciou e espera o tempo definido em tempoEsperaProxMovimento (em milisegundos)
-unsigned int tempoEsperaProxMovimento = 200;
+unsigned int tempoEsperaProxMovimento = 1000;
 unsigned long tempoAtivacaoMovimentoAtual = 0;
 
 // Espera um tempo antes de bloquear a leitura para preparar os bits para o próximo movimento do robô
 // Grava o momento em que o movimento iniciou e espera o tempo definido em tempoEsperaLeituraBits (em milisegundos)
-unsigned int tempoEsperaLeituraBits = 200;
+unsigned int tempoEsperaLeituraBits = 1000;
 unsigned long tempoLeituraBitsAtual = 0;
 
-byte pos = 1;  // Posição Inicial
+// Espera um tempo antes de enviar as informações atualizadas da Magazine e das cahas da Esteira para o Esp32
+// Grava o momento em que o movimento iniciou e espera o tempo definido em tempoEsperaEnviaDados (em milisegundos)
+unsigned int tempoEsperaEnviaDados = 500;
+unsigned long tempoEnvioDadosAtual = 0;
+
+bool novosDadosMagazine = false;
+bool novosDadosEsteira = false;
+
+byte pos = 1;           // Posição Inicial
+byte prateleira_atual;  //Prateleira correspondente ao tipo da peça movimentada
+byte calha_atual;       //Calha da Esteira correspondente ao tipo da peça movimentada
 
 //Setorizações
 byte setorizacao = 0;  // Confirma que os movimentos do robo vão acontecer na ordem certa
@@ -145,23 +40,21 @@ bool fim_movimentacao_pecas = false;    //Guarda quando uma movimentação de pe
 bool inicio_peca = true;                // Informa se é a primeira peça do grupo a ser movimentada
 byte movimento_atual_processo = 0;      // controla em qual tipo de movimento o processo está atualmente
 bool libera_mudanca_movimento = false;  // se verdadeiro, libera alterar o tipo de movimento (colocar ou remover peças) quando faz ciclos de movimento
+bool interrompeCiclos = false;          // interrompe o funcionamento dos ciclos para finalizar o processo no ciclo atual
 
-// - - - - - - - - - - - - - - - - - - -
-// Configurações Iniciais
-// - - - - - - - - - - - - - - - - - - -
-void setup() {
+void setupControleRobo() {
   pinMode(pino_resposta, INPUT_PULLUP);
   pinMode(pino_hab_movimento, OUTPUT);
-  pinMode(pino_bit_6, OUTPUT);
   pinMode(pino_bit_5, OUTPUT);
   pinMode(pino_bit_4, OUTPUT);
   pinMode(pino_bit_3, OUTPUT);
   pinMode(pino_bit_2, OUTPUT);
   pinMode(pino_bit_1, OUTPUT);
-  pinMode(pino_start, INPUT_PULLUP);
+  pinMode(pino_sinal_esteira, OUTPUT);
 
   digitalWrite(pino_hab_movimento, DESATIVAR);
-  digitalWrite(pino_bit_6, DESATIVAR);
+  digitalWrite(pino_sinal_esteira, DESATIVAR);
+
   digitalWrite(pino_bit_5, DESATIVAR);
   digitalWrite(pino_bit_4, DESATIVAR);
   digitalWrite(pino_bit_3, DESATIVAR);
@@ -169,158 +62,173 @@ void setup() {
   digitalWrite(pino_bit_1, DESATIVAR);
 
   randomSeed(analogRead(0));
-
-  Serial.begin(9600);
-
-  n_ciclos = 1;
-  ciclo_atual = 101;
-  movimento_atual_processo = 1;
-}
-
-// - - - - - - - - - - - - - - - - - - -
-// Programa Principal
-// - - - - - - - - - - - - - - - - - - -
-void loop() {
-  movimentos_em_ciclo();
-}
+};
 
 //Controla os ciclos que o processo vai realizar com base no valor de n_ciclos
-//pensar em outro nome
-void movimentos_em_ciclo() {
-  //Sem Ciclos
-  if (n_ciclos == 150) {
-    processoMagazineRobo(false);
+void processoControleRobo() {
+  if (start) {
+    processo_em_andamento = true;
+    ciclo_atual = 101;
+    movimento_atual_processo = 1;
+    start = false;
   }
 
-  //Ciclos definidos por n_ciclos
-  else if (n_ciclos > 0 && n_ciclos <= 100) {
+  if (stop) {
+    ciclo_atual = 1;
+    interrompeCiclos = true;
+    stop = false;
+  }
 
-    if (ciclo_atual == 101) {
-      ciclo_atual = n_ciclos;
+  if (processo_em_andamento) {
+    //Sem Ciclos
+    if (n_ciclos == 150) {
+      processoTipoMovimento(false);
 
-      Serial.println("");
-
-      Serial.print("Movimento atual do processo: ");
-      Serial.println(movimento_atual_processo);
-
-      Serial.print("Ciclo Atual: ");
-      Serial.println(ciclo_atual);
-
-      Serial.println("");
-
-      delay(1000);
-    }
-
-    if (ciclo_atual > 0) {
-      switch (movimento_atual_processo) {
-        case 1:
-          //Operacao = 'c';
-          processoMagazineRobo(true);
-          break;
-        case 2:
-          movimento_atual_processo = 3;
-          fim_movimentacao_pecas = false;
-          break;
-        case 3:
-          //Operacao = 'r';
-          processoMagazineRobo(true);
-          break;
-        case 4:
-          movimento_atual_processo = 1;
-          ciclo_atual--;
-          fim_movimentacao_pecas = false;
-
-          Serial.println("");
-
-          Serial.print("Movimento atual do processo: ");
-          Serial.println(movimento_atual_processo);
-
-          Serial.print("Ciclo Atual: ");
-          Serial.println(ciclo_atual);
-
-          Serial.println("");
-
-          delay(1500);
-          break;
+      if (libera_mudanca_movimento) {
+        interrompeCiclos = false;
+        processo_em_andamento = false;
+        libera_mudanca_movimento = false;
+        pos = 1;
+        setorizacao = 0;
+        ciclo_pecas = 0;
+        fim_movimentacao_pecas = false;
+        inicio_peca = true;
+        movimento_atual_processo = 0;
       }
-    } else {
-      //fim dos ciclos
-    }
-  }
-
-  //Ciclos infinitos
-  else if (n_ciclos == 200) {
-
-    if (ciclo_atual == 101) {
-      ciclo_atual = n_ciclos;
-
-      Serial.println("");
-
-      Serial.print("Movimento atual do processo: ");
-      Serial.println(movimento_atual_processo);
-
-      Serial.print("Ciclo Atual: ");
-      Serial.println(ciclo_atual);
-
-      Serial.println("");
-
-      delay(1500);
     }
 
-    if (ciclo_atual == 200) {
-      switch (movimento_atual_processo) {
-        case 1:
-          //Operacao = 'c';
-          processoMagazineRobo(true);
-          break;
-        case 2:
-          movimento_atual_processo = 3;
-          fim_movimentacao_pecas = false;
-          break;
-        case 3:
-          //Operacao = 'r';
-          processoMagazineRobo(true);
-          break;
-        case 4:
-          movimento_atual_processo = 1;
-          fim_movimentacao_pecas = false;
-          break;
+    //Ciclos definidos por n_ciclos
+    else if ((n_ciclos > 0 && n_ciclos <= 100) || interrompeCiclos == true) {
 
-          Serial.println("");
+      if (ciclo_atual == 101) {
+        ciclo_atual = n_ciclos;
 
-          Serial.print("Movimento atual do processo: ");
-          Serial.println(movimento_atual_processo);
+        Serial.println("");
 
-          Serial.print("Ciclo Atual: ");
-          Serial.println(ciclo_atual);
+        Serial.print("Movimento atual do processo: ");
+        Serial.println(movimento_atual_processo);
 
-          Serial.println("");
+        Serial.print("Ciclo Atual: ");
+        Serial.println(ciclo_atual);
 
-          delay(1500);
+        Serial.println("");
+      }
+
+      if (ciclo_atual > 0) {
+        switch (movimento_atual_processo) {
+          case 1:
+            //Tipo_Movimento = 'c';
+            processoTipoMovimento(true);
+            break;
+          case 2:
+            movimento_atual_processo = 3;
+            fim_movimentacao_pecas = false;
+            break;
+          case 3:
+            //Tipo_Movimento = 'r';
+            processoTipoMovimento(true);
+            break;
+          case 4:
+            movimento_atual_processo = 1;
+            ciclo_atual--;
+            fim_movimentacao_pecas = false;
+
+            Serial.println("");
+
+            Serial.print("Movimento atual do processo: ");
+            Serial.println(movimento_atual_processo);
+
+            Serial.print("Ciclo Atual: ");
+            Serial.println(ciclo_atual);
+
+            Serial.println("");
+            break;
+        }
+      } else {
+        //Fim dos Ciclos - Reseta todas as variáveis de controle
+        interrompeCiclos = false;
+        processo_em_andamento = false;
+        libera_mudanca_movimento = false;
+
+        pos = 1;
+        setorizacao = 0;
+        ciclo_pecas = 0;
+        fim_movimentacao_pecas = false;
+        inicio_peca = true;
+        movimento_atual_processo = 0;
+      }
+    }
+
+    //Ciclos infinitos
+    else if (n_ciclos == 200 && interrompeCiclos == false) {
+
+      if (ciclo_atual == 101) {
+        ciclo_atual = n_ciclos;
+
+        Serial.println("");
+
+        Serial.print("Movimento atual do processo: ");
+        Serial.println(movimento_atual_processo);
+
+        Serial.print("Ciclo Atual: ");
+        Serial.println(ciclo_atual);
+
+        Serial.println("");
+      }
+
+      if (ciclo_atual == 200) {
+        switch (movimento_atual_processo) {
+          case 1:
+            //Tipo_Movimento = 'c';
+            processoTipoMovimento(true);
+            break;
+          case 2:
+            movimento_atual_processo = 3;
+            fim_movimentacao_pecas = false;
+            break;
+          case 3:
+            //Tipo_Movimento = 'r';
+            processoTipoMovimento(true);
+            break;
+          case 4:
+            movimento_atual_processo = 1;
+            fim_movimentacao_pecas = false;
+            break;
+
+            Serial.println("");
+
+            Serial.print("Movimento atual do processo: ");
+            Serial.println(movimento_atual_processo);
+
+            Serial.print("Ciclo Atual: ");
+            Serial.println(ciclo_atual);
+
+            Serial.println("");
+        }
       }
     }
   }
 }
 
-//pensar em outro nome
-void processoMagazineRobo(bool mudar_tipo_movimento) {
+//
+void processoTipoMovimento(bool mudar_tipo_movimento) {
   //Muda o tipo de movimento (colocar ou remover peças) se o processo estiver em ciclos
   if (mudar_tipo_movimento && libera_mudanca_movimento) {
-    if (Operacao == 'c') {
-      Operacao = 'r';
-    } else {
-      Operacao = 'c';
-    }
-
     libera_mudanca_movimento = false;
+
+    if (Tipo_Movimento == 'c') {
+      Tipo_Movimento = 'r';
+    } else {
+      Tipo_Movimento = 'c';
+    }
   }
 
-  if (Ordem == 's') {
-    processoMagazineSequencia(Operacao);
+  if (Tipo_Sequencia == 's') {
+    processoMagazineSequencia(Tipo_Movimento);
   }
 
-  else if (Ordem == 'a') {
-    processoMagazineAlternado(Operacao);
+  else if (Tipo_Sequencia == 'a') {
+    processoMagazineAlternado(Tipo_Movimento);
   }
 }
 
@@ -365,7 +273,6 @@ void processoMagazineSequencia(char tipo_movimento) {
       for (int i = 0; i < 3; i++) {
         Serial.println(magazine[i]);
       }
-      delay(1000);
       movimento_atual_processo++;
       libera_mudanca_movimento = true;
     }
@@ -380,103 +287,81 @@ void magazineSequenciaColocar(char tipo_peca) {
   }
 
   if (pos <= Qtde) {
-
-    static byte prateleira_atual;
-
-    if (millis() >= (tempoLeituraBitsAtual + tempoEsperaLeituraBits)) {
-      observadorRespostaRobo();
+    switch (tipo_peca) {
+      case 'V':
+        prateleira_atual = Prat_V;
+        calha_atual = 2;
+        break;
+      case 'P':
+        prateleira_atual = Prat_P;
+        calha_atual = 1;
+        break;
+      case 'M':
+        prateleira_atual = Prat_M;
+        calha_atual = 0;
+        break;
     }
 
     if (setorizacao == 0 && (millis() >= (tempoLeituraBitsAtual + tempoEsperaLeituraBits))) {
+      // Se a peça não estiver na calha da Esteira e já estiver na magazine,
+      // então não é necessário realizar esse movimento; pula para a próxima peça
+      if ((calhasEsteira[calha_atual][pos - 1] == false) && (magazine[prateleira_atual][pos - 1] == tipo_peca)) {
+        setorizacao = 4;
+      }
 
-      if (verificaMovimentoBase(tipo_peca, pos, false)) {
-        Pega_Peca_Base(tipo_peca, pos);
+      // //Se a peça não estiver na calha da Esteira e na magazine tem peça diferente, ou não tem peça, impede o processo com uma mensagem de erro
+      // else if ((calhasEsteira[calha_atual][pos - 1] == false) && (magazine[prateleira_atual][pos - 1] != tipo_peca)) {
+      //   tratamentoErro('M');
+      // }
 
-        switch (tipo_peca) {
-          case 'V':
-            baseRobo[0][pos - 1] = false;
+      else {
+        if (verificaMovimentoCalhas(calha_atual, pos)) {
+          Retira_Peca_Esteira(calha_atual);
+          calhasEsteira[calha_atual][pos - 1] = false;
+          novosDadosEsteira = true;
 
-            Serial.print("Base ");
-            Serial.print(tipo_peca);
-            Serial.print(pos);
-            Serial.print(" atualizada: ");
-            Serial.println(baseRobo[0][pos - 1]);
-            Serial.println("");
+          Serial.print("Calha ");
+          Serial.print(calha_atual);
+          Serial.print(pos);
+          Serial.print(" atualizada: ");
+          Serial.println(calhasEsteira[calha_atual][pos - 1]);
+          Serial.println("");
 
-            break;
-          case 'P':
-            baseRobo[1][pos - 1] = false;
+          Serial.print("Calha: ");
+          Serial.print(tipo_peca);
+          Serial.print(", ");
+          Serial.println(pos);
 
-            Serial.print("Base ");
-            Serial.print(tipo_peca);
-            Serial.print(pos);
-            Serial.print(" atualizada: ");
-            Serial.println(baseRobo[1][pos - 1]);
-            Serial.println("");
-
-            break;
-          case 'M':
-            baseRobo[2][pos - 1] = false;
-
-            Serial.print("Base ");
-            Serial.print(tipo_peca);
-            Serial.print(pos);
-            Serial.print(" atualizada: ");
-            Serial.println(baseRobo[2][pos - 1]);
-            Serial.println("");
-
-            break;
+          setorizacao = 1;
+          tempoAtivacaoMovimentoAtual = millis();
         }
-
-        setorizacao = 1;
-        tempoAtivacaoMovimentoAtual = millis();
-      } else {
-        Serial.println("erro base colocar");
       }
     }
 
     if (setorizacao == 2 && (millis() >= (tempoLeituraBitsAtual + tempoEsperaLeituraBits))) {
-
       if (verificaMovimentoMagazine(tipo_peca, pos, true)) {
-        switch (tipo_peca) {
-          case 'V':
-            Leva_Peca_Magazine(Prat_V, pos);
-            magazine[Prat_V][pos - 1] = 'V';
-            prateleira_atual = Prat_V;
-            //Serial.println(magazine[Prat_V][pos - 1]);
 
-            break;
-          case 'P':
-            Leva_Peca_Magazine(Prat_P, pos);
-            magazine[Prat_P][pos - 1] = 'P';
-            prateleira_atual = Prat_P;
-            //Serial.println(magazine[Prat_P][pos - 1]);
+        Coloca_Peca_Magazine(prateleira_atual, pos);
+        magazine[prateleira_atual][pos - 1] = tipo_peca;
+        novosDadosMagazine = true;
 
-            break;
-          case 'M':
-            Leva_Peca_Magazine(Prat_M, pos);
-            magazine[Prat_M][pos - 1] = 'M';
-            prateleira_atual = Prat_M;
-            //Serial.println(magazine[Prat_M][pos - 1]);
-
-            break;
-        }
         setorizacao = 3;
         tempoAtivacaoMovimentoAtual = millis();
       } else {
-        Serial.println("erro mag colocar");
+        Serial.println("Erro Mag Colocar");
       }
     }
 
     if (robo_em_movimento == false && (millis() >= (tempoEsperaProxMovimento + tempoAtivacaoMovimentoAtual)) && (setorizacao == 1 || setorizacao == 3)) {
       habilitaMovimento();
       tempoLeituraBitsAtual = millis();
+      tempoEnvioDadosAtual = millis();
 
       if (setorizacao == 1) {
-        Serial.print("Realizando movimento: Base do Robô - Tipo da Peça e Posição: ");
+        Serial.print("Realizando movimento: Calha da Esteira - Tipo da Peça e Posição: ");
       } else if (setorizacao == 3) {
         Serial.print("Realizando movimento: Magazine - Tipo da Peça e Posição: ");
-        enviarDadosMagazine(prateleira_atual, (pos - 1));
+        //enviarDadosMagazine(prateleira_atual, (pos - 1));
       }
       Serial.print(tipo_peca);
       Serial.println(pos);
@@ -488,9 +373,24 @@ void magazineSequenciaColocar(char tipo_peca) {
       Serial.println("Aguardando resposta o robo............");
     }
 
-    if (setorizacao == 4) {
+    if (novosDadosMagazine == true && (millis() >= (tempoEsperaEnviaDados + tempoEnvioDadosAtual))) {
+      novosDadosMagazine = false;
+      enviarDadosMagazine(prateleira_atual, (pos - 1));
+    }
+
+    if (novosDadosEsteira == true && (millis() >= (tempoEsperaEnviaDados + tempoEnvioDadosAtual))) {
+      novosDadosEsteira = false;
+      enviarDadosEsteira(calha_atual, (pos - 1));
+    }
+
+    if (setorizacao == 4 && robo_em_movimento == false) {
       pos++;
       setorizacao = 0;
+    }
+
+    //Espera a resposta do Robô, que encia o sinal quando termina o movimento
+    if (millis() >= (tempoLeituraBitsAtual + tempoEsperaLeituraBits)) {
+      observadorRespostaRobo();
     }
 
     //testar tempo com robo
@@ -512,100 +412,71 @@ void magazineSequenciaRemover(char tipo_peca) {
 
   if (pos > 0) {
 
-    static byte prateleira_atual;
-
-    if (millis() >= (tempoLeituraBitsAtual + tempoEsperaLeituraBits)) {
-      observadorRespostaRobo();
+    switch (tipo_peca) {
+      case 'V':
+        prateleira_atual = Prat_V;
+        calha_atual = 2;
+        break;
+      case 'P':
+        prateleira_atual = Prat_P;
+        calha_atual = 1;
+        break;
+      case 'M':
+        prateleira_atual = Prat_M;
+        calha_atual = 0;
+        break;
     }
 
     if (setorizacao == 0 && (millis() >= (tempoLeituraBitsAtual + tempoEsperaLeituraBits))) {
+      // Se a peça não estiver na magazine e já estiver na calha,
+      // então não é necessário realizar esse movimento; pula para a próxima peça
+      if ((calhasEsteira[calha_atual][pos - 1] == true) && (magazine[prateleira_atual][pos - 1] == '-')) {
+        setorizacao = 4;
+      } else {
+        if (verificaMovimentoMagazine(tipo_peca, pos, false)) {
 
-      if (verificaMovimentoMagazine(tipo_peca, pos, false)) {
+          Retira_Peca_Magazine(prateleira_atual, pos);
+          magazine[prateleira_atual][pos - 1] = '-';
+          novosDadosMagazine = true;
 
-        switch (tipo_peca) {
-          case 'V':
-            Pega_Peca_Magazine(Prat_V, pos);
-            magazine[Prat_V][pos - 1] = '-';
-            prateleira_atual = Prat_V;
-
-            //Serial.println(magazine[Prat_V][pos - 1]);
-            break;
-          case 'P':
-            Pega_Peca_Magazine(Prat_P, pos);
-            magazine[Prat_P][pos - 1] = '-';
-            prateleira_atual = Prat_P;
-
-            //Serial.println(magazine[Prat_P][pos - 1]);
-            break;
-          case 'M':
-            Pega_Peca_Magazine(Prat_M, pos);
-            magazine[Prat_M][pos - 1] = '-';
-            prateleira_atual = Prat_M;
-
-            //Serial.println(magazine[Prat_M][pos - 1]);
-            break;
+          setorizacao = 1;
+          tempoAtivacaoMovimentoAtual = millis();
         }
-        setorizacao = 1;
-        tempoAtivacaoMovimentoAtual = millis();
       }
     }
 
-    if (setorizacao == 2 && (millis() >= (tempoLeituraBitsAtual + tempoEsperaLeituraBits))) {
+    if (setorizacao == 2 && robo_em_movimento == false && (millis() >= (tempoLeituraBitsAtual + tempoEsperaLeituraBits))) {
+      Libera_Coloca_Peca_Esteira();
+      robo_em_movimento = true;
+      calhasEsteira[calha_atual][pos - 1] = true;
+      novosDadosEsteira = true;
 
-      if (verificaMovimentoBase(tipo_peca, pos, true)) {
-        Leva_Peca_Base(tipo_peca, pos);
+      Serial.print("Calha ");
+      Serial.print(calha_atual);
+      Serial.print(pos);
+      Serial.print(" atualizada: ");
+      Serial.println(calhasEsteira[calha_atual][pos - 1]);
+      Serial.println("");
 
-        switch (tipo_peca) {
-          case 'V':
-            baseRobo[0][pos - 1] = true;
+      Serial.print("Calha: ");
+      Serial.print(tipo_peca);
+      Serial.print(", ");
+      Serial.println(pos);
 
-            Serial.print("Base ");
-            Serial.print(tipo_peca);
-            Serial.print(pos);
-            Serial.print(" atualizada: ");
-            Serial.println(baseRobo[0][pos - 1]);
-            Serial.println("");
-
-            break;
-          case 'P':
-            baseRobo[1][pos - 1] = true;
-
-            Serial.print("Base ");
-            Serial.print(tipo_peca);
-            Serial.print(pos);
-            Serial.print(" atualizada: ");
-            Serial.println(baseRobo[1][pos - 1]);
-            Serial.println("");
-
-            break;
-          case 'M':
-            baseRobo[2][pos - 1] = true;
-
-            Serial.print("Base ");
-            Serial.print(tipo_peca);
-            Serial.print(pos);
-            Serial.print(" atualizada: ");
-            Serial.println(baseRobo[2][pos - 1]);
-            Serial.println("");
-
-            break;
-        }
-        setorizacao = 3;
-        tempoAtivacaoMovimentoAtual = millis();
-      } else {
-        Serial.println("erro aqui..................................");
-      }
+      setorizacao = 3;
+      tempoAtivacaoMovimentoAtual = millis();
     }
 
     if (robo_em_movimento == false && (millis() >= (tempoEsperaProxMovimento + tempoAtivacaoMovimentoAtual)) && (setorizacao == 1 || setorizacao == 3)) {
-      habilitaMovimento();
-      tempoLeituraBitsAtual = millis();
 
       if (setorizacao == 1) {
+        habilitaMovimento();
+        tempoLeituraBitsAtual = millis();
+        tempoEnvioDadosAtual = millis();
+
         Serial.print("Realizando movimento: Magazine - Tipo da Peça e Posição: ");
       } else if (setorizacao == 3) {
-        Serial.print("Realizando movimento: Base do Robô - Tipo da Peça e Posição: ");
-        enviarDadosMagazine(prateleira_atual, (pos - 1));
+        Serial.print("Realizando movimento: Calha da Esteira - Tipo da Peça e Posição: ");
       }
       Serial.print(tipo_peca);
       Serial.println(pos);
@@ -617,9 +488,24 @@ void magazineSequenciaRemover(char tipo_peca) {
       Serial.println("Aguardando resposta o robo............");
     }
 
-    if (setorizacao == 4) {
+    if (novosDadosMagazine == true && (millis() >= (tempoEsperaEnviaDados + tempoEnvioDadosAtual))) {
+      novosDadosMagazine = false;
+      enviarDadosMagazine(prateleira_atual, (pos - 1));
+    }
+
+    if (novosDadosEsteira == true && (millis() >= (tempoEsperaEnviaDados + tempoEnvioDadosAtual))) {
+      novosDadosEsteira = false;
+      enviarDadosEsteira(calha_atual, (pos - 1));
+    }
+
+    if (setorizacao == 4 && robo_em_movimento == false) {
       pos--;
       setorizacao = 0;
+    }
+
+    //Espera a resposta do Robô, que envia o sinal quando termina o movimento
+    if (millis() >= (tempoLeituraBitsAtual + tempoEsperaLeituraBits)) {
+      observadorRespostaRobo();
     }
 
     //testar tempo com robo
@@ -683,101 +569,60 @@ void magazineAlternado(char tipo_peca, char tipo_movimento) {
     inicio_peca = false;
   }
 
-  if (millis() >= (tempoLeituraBitsAtual + tempoEsperaLeituraBits)) {
-    observadorRespostaRobo();
-  }
+  static byte pos_aleatoria;
 
-  static byte prateleira_atual;
+  switch (tipo_peca) {
+    case 'V':
+      prateleira_atual = Prat_V;
+      calha_atual = 2;
+      break;
+    case 'P':
+      prateleira_atual = Prat_P;
+      calha_atual = 1;
+      break;
+    case 'M':
+      prateleira_atual = Prat_M;
+      calha_atual = 0;
+      break;
+  }
 
   if (setorizacao == 0 && (millis() >= (tempoLeituraBitsAtual + tempoEsperaLeituraBits))) {
     if (tipo_movimento == 'c') {
 
-      if (verificaMovimentoBase(tipo_peca, pos, false)) {
-        Pega_Peca_Base(tipo_peca, pos);
+      if (verificaMovimentoCalhas(calha_atual, pos)) {
+        Retira_Peca_Esteira(calha_atual);
+        calhasEsteira[calha_atual][pos - 1] = false;
+        novosDadosEsteira = true;
 
-        switch (tipo_peca) {  //COLOCAR EM FUNÇÃO <---------------------------------
-          case 'V':
-            baseRobo[0][pos - 1] = false;
+        Serial.print("Calha ");
+        Serial.print(calha_atual);
+        Serial.print(pos);
+        Serial.print(" atualizada: ");
+        Serial.println(calhasEsteira[calha_atual][pos - 1]);
+        Serial.println("");
 
-            Serial.print("Base ");
-            Serial.print(tipo_peca);
-            Serial.print(pos);
-            Serial.print(" atualizada: ");
-            Serial.println(baseRobo[0][pos - 1]);
-            Serial.println("");
-
-            prateleira_atual = Prat_V;
-
-            break;
-          case 'P':
-            baseRobo[1][pos - 1] = false;
-
-            Serial.print("Base ");
-            Serial.print(tipo_peca);
-            Serial.print(pos);
-            Serial.print(" atualizada: ");
-            Serial.println(baseRobo[1][pos - 1]);
-            Serial.println("");
-
-            prateleira_atual = Prat_P;
-
-            break;
-          case 'M':
-            baseRobo[2][pos - 1] = false;
-
-            Serial.print("Base ");
-            Serial.print(tipo_peca);
-            Serial.print(pos);
-            Serial.print(" atualizada: ");
-            Serial.println(baseRobo[2][pos - 1]);
-            Serial.println("");
-
-            prateleira_atual = Prat_M;
-
-            break;
-        }
-
-        Serial.print("posicao base: ");
+        Serial.print("Calha: ");
         Serial.print(tipo_peca);
         Serial.print(", ");
         Serial.println(pos);
       }
 
     } else if (tipo_movimento == 'r') {
+      pos_aleatoria = aleatorio(prateleira_atual, false);
 
-      if (verificaMovimentoMagazine(tipo_peca, pos, false)) {
-
-        byte pos_aleatoria;
-
-        switch (tipo_peca) {
-          case 'V':
-            pos_aleatoria = aleatorio(Prat_V, false);
-            Pega_Peca_Magazine(Prat_V, pos_aleatoria);
-            magazine[Prat_V][pos_aleatoria - 1] = '-';
-            prateleira_atual = Prat_V;
-            break;
-          case 'P':
-            pos_aleatoria = aleatorio(Prat_P, false);
-            Pega_Peca_Magazine(Prat_P, pos_aleatoria);
-            magazine[Prat_P][pos_aleatoria - 1] = '-';
-            prateleira_atual = Prat_P;
-            break;
-          case 'M':
-            pos_aleatoria = aleatorio(Prat_M, false);
-            Pega_Peca_Magazine(Prat_M, pos_aleatoria);
-            magazine[Prat_M][pos_aleatoria - 1] = '-';
-            prateleira_atual = Prat_M;
-            break;
-        }
-
-        Serial.print("posicao mag: ");
-        Serial.print(tipo_peca);
-        Serial.print(", ");
-        Serial.println(pos_aleatoria);
-
-        Serial.println("pos_aleatoria ................................");
-        Serial.println(pos_aleatoria);
+      if (verificaMovimentoMagazine(tipo_peca, pos_aleatoria, false)) {
+        Retira_Peca_Magazine(prateleira_atual, pos_aleatoria);
+        magazine[prateleira_atual][pos_aleatoria - 1] = '-';
+        novosDadosMagazine = true;
       }
+
+      Serial.print("posicao mag: ");
+      Serial.print(tipo_peca);
+      Serial.print(", ");
+      Serial.println(pos_aleatoria);
+
+      Serial.println("pos_aleatoria ................................");
+      Serial.println(pos_aleatoria);
     }
 
     setorizacao = 1;
@@ -786,97 +631,54 @@ void magazineAlternado(char tipo_peca, char tipo_movimento) {
 
   if (setorizacao == 2 && (millis() >= (tempoLeituraBitsAtual + tempoEsperaLeituraBits))) {
     if (tipo_movimento == 'c') {
+      pos_aleatoria = aleatorio(prateleira_atual, true);
 
-      if (verificaMovimentoMagazine(tipo_peca, pos, true)) {
-
-        byte pos_aleatoria;
-
-        switch (tipo_peca) {
-          case 'V':
-            pos_aleatoria = aleatorio(Prat_V, true);
-            Leva_Peca_Magazine(Prat_V, pos_aleatoria);
-            magazine[Prat_V][pos_aleatoria - 1] = 'V';
-            break;
-          case 'P':
-            pos_aleatoria = aleatorio(Prat_P, true);
-            Leva_Peca_Magazine(Prat_P, pos_aleatoria);
-            magazine[Prat_P][pos_aleatoria - 1] = 'P';
-            break;
-          case 'M':
-            pos_aleatoria = aleatorio(Prat_M, true);
-            Leva_Peca_Magazine(Prat_M, pos_aleatoria);
-            magazine[Prat_M][pos_aleatoria - 1] = 'M';
-            break;
-        }
-
-        Serial.print("posicao mag: ");
-        Serial.print(tipo_peca);
-        Serial.print(", ");
-        Serial.println(pos_aleatoria);
+      if (verificaMovimentoMagazine(tipo_peca, pos_aleatoria, true)) {
+        Coloca_Peca_Magazine(prateleira_atual, pos_aleatoria);
+        magazine[prateleira_atual][pos_aleatoria - 1] = tipo_peca;
+        novosDadosMagazine = true;
       }
 
-    } else if (tipo_movimento == 'r') {
+      Serial.print("posicao mag: ");
+      Serial.print(tipo_peca);
+      Serial.print(", ");
+      Serial.println(pos_aleatoria);
 
-      if (verificaMovimentoBase(tipo_peca, pos, 1)) {
+      setorizacao = 3;
+      tempoAtivacaoMovimentoAtual = millis();
 
-        Leva_Peca_Base(tipo_peca, pos);
+    } else if (tipo_movimento == 'r' && robo_em_movimento == false) {
+      Libera_Coloca_Peca_Esteira();
+      calhasEsteira[calha_atual][pos - 1] = true;
+      novosDadosEsteira = true;
 
-        switch (tipo_peca) {  //COLOCAR EM FUNÇÃO <---------------------------------
-          case 'V':
-            baseRobo[0][pos - 1] = true;
+      Serial.print("Calha ");
+      Serial.print(calha_atual);
+      Serial.print(pos);
+      Serial.print(" atualizada: ");
+      Serial.println(calhasEsteira[calha_atual][pos - 1]);
+      Serial.println("");
 
-            Serial.print("Base ");
-            Serial.print(tipo_peca);
-            Serial.print(pos);
-            Serial.print(" atualizada: ");
-            Serial.println(baseRobo[0][pos - 1]);
-            Serial.println("");
+      Serial.print("Calha: ");
+      Serial.print(tipo_peca);
+      Serial.print(", ");
+      Serial.println(pos);
 
-            break;
-          case 'P':
-            baseRobo[1][pos - 1] = true;
-
-            Serial.print("Base ");
-            Serial.print(tipo_peca);
-            Serial.print(pos);
-            Serial.print(" atualizada: ");
-            Serial.println(baseRobo[1][pos - 1]);
-            Serial.println("");
-
-            break;
-          case 'M':
-            baseRobo[2][pos - 1] = true;
-
-            Serial.print("Base ");
-            Serial.print(tipo_peca);
-            Serial.print(pos);
-            Serial.print(" atualizada: ");
-            Serial.println(baseRobo[2][pos - 1]);
-            Serial.println("");
-
-            break;
-        }
-
-        Serial.print("posicao base: ");
-        Serial.print(tipo_peca);
-        Serial.print(", ");
-        Serial.println(pos);
-      }
+      setorizacao = 3;
+      tempoAtivacaoMovimentoAtual = millis();
     }
-
-    setorizacao = 3;
-    tempoAtivacaoMovimentoAtual = millis();
   }
 
   if (robo_em_movimento == false && (millis() >= (tempoEsperaProxMovimento + tempoAtivacaoMovimentoAtual)) && (setorizacao == 1 || setorizacao == 3)) {
     habilitaMovimento();
     tempoLeituraBitsAtual = millis();
+    tempoEnvioDadosAtual = millis();
 
     if (setorizacao == 1) {
-      Serial.print("Realizando movimento: Base do Robô - Tipo da Peça e Posição: ");
+      Serial.print("Realizando movimento: Calha da Esteira - Tipo da Peça e Posição: ");
     } else if (setorizacao == 3) {
       Serial.print("Realizando movimento: Magazine - Tipo da Peça e Posição: ");
-      enviarDadosMagazine(prateleira_atual, (pos - 1));
+      //enviarDadosMagazine(prateleira_atual, (pos_aleatoria - 1));
     }
     Serial.print(tipo_peca);
     Serial.println(pos);
@@ -888,159 +690,41 @@ void magazineAlternado(char tipo_peca, char tipo_movimento) {
     Serial.println("Aguardando resposta o robo............");
   }
 
-  if (setorizacao == 4) {
+  if (novosDadosMagazine == true && (millis() >= (tempoEsperaEnviaDados + tempoEnvioDadosAtual))) {
+    novosDadosMagazine = false;
+    enviarDadosMagazine(prateleira_atual, (pos - 1));
+  }
+
+  if (novosDadosEsteira == true && (millis() >= (tempoEsperaEnviaDados + tempoEnvioDadosAtual))) {
+    novosDadosEsteira = false;
+    enviarDadosEsteira(calha_atual, (pos - 1));
+  }
+
+  if (setorizacao == 4 && robo_em_movimento == false) {
     ciclo_pecas++;
     setorizacao = 0;
     inicio_peca = true;  //fim do loop e inicio de outra coluna de peças
+  }
 
-    /*Serial.print("ciclo_pecas ... ");
-    Serial.println(ciclo_pecas);
-    Serial.print("movimento_atual_processo ... ");
-    Serial.println(movimento_atual_processo);
-    */
+  //Espera a resposta do Robô, que encia o sinal quando termina o movimento
+  if (millis() >= (tempoLeituraBitsAtual + tempoEsperaLeituraBits)) {
+    observadorRespostaRobo();
   }
 
   //testar tempo com robo
   if (millis() >= (tempoLeituraBitsAtual + tempoEsperaLeituraBits)) {
     digitalWrite(pino_hab_movimento, DESATIVAR);
-
     Serial.println("Desativa Hab_movimento - Fim Leitura Bits");
   }
 }
 
 //
-void Pega_Peca_Base(char tipo_peca, byte pos) {
-  switch (tipo_peca) {
-    case 'V':
-      switch (pos) {
-        case 1:
-          digitalWrite(pino_bit_6, DESATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, DESATIVAR);
-          digitalWrite(pino_bit_3, DESATIVAR);
-          digitalWrite(pino_bit_2, DESATIVAR);
-          digitalWrite(pino_bit_1, DESATIVAR);
-          break;
-
-        case 2:
-          digitalWrite(pino_bit_6, DESATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, DESATIVAR);
-          digitalWrite(pino_bit_3, DESATIVAR);
-          digitalWrite(pino_bit_2, DESATIVAR);
-          digitalWrite(pino_bit_1, ATIVAR);
-          break;
-
-        case 3:
-          digitalWrite(pino_bit_6, DESATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, DESATIVAR);
-          digitalWrite(pino_bit_3, DESATIVAR);
-          digitalWrite(pino_bit_2, ATIVAR);
-          digitalWrite(pino_bit_1, DESATIVAR);
-          break;
-
-        case 4:
-          digitalWrite(pino_bit_6, DESATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, DESATIVAR);
-          digitalWrite(pino_bit_3, DESATIVAR);
-          digitalWrite(pino_bit_2, ATIVAR);
-          digitalWrite(pino_bit_1, ATIVAR);
-          break;
-      }
-      break;
-
-    case 'P':
-      switch (pos) {
-        case 1:
-          digitalWrite(pino_bit_6, DESATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, DESATIVAR);
-          digitalWrite(pino_bit_3, ATIVAR);
-          digitalWrite(pino_bit_2, DESATIVAR);
-          digitalWrite(pino_bit_1, DESATIVAR);
-          break;
-
-        case 2:
-          digitalWrite(pino_bit_6, DESATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, DESATIVAR);
-          digitalWrite(pino_bit_3, ATIVAR);
-          digitalWrite(pino_bit_2, DESATIVAR);
-          digitalWrite(pino_bit_1, ATIVAR);
-          break;
-
-        case 3:
-          digitalWrite(pino_bit_6, DESATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, DESATIVAR);
-          digitalWrite(pino_bit_3, ATIVAR);
-          digitalWrite(pino_bit_2, ATIVAR);
-          digitalWrite(pino_bit_1, DESATIVAR);
-          break;
-
-        case 4:
-          digitalWrite(pino_bit_6, DESATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, DESATIVAR);
-          digitalWrite(pino_bit_3, ATIVAR);
-          digitalWrite(pino_bit_2, ATIVAR);
-          digitalWrite(pino_bit_1, ATIVAR);
-          break;
-      }
-
-      break;
-
-    case 'M':
-      switch (pos) {
-        case 1:
-          digitalWrite(pino_bit_6, DESATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, ATIVAR);
-          digitalWrite(pino_bit_3, DESATIVAR);
-          digitalWrite(pino_bit_2, DESATIVAR);
-          digitalWrite(pino_bit_1, DESATIVAR);
-          break;
-
-        case 2:
-          digitalWrite(pino_bit_6, DESATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, ATIVAR);
-          digitalWrite(pino_bit_3, DESATIVAR);
-          digitalWrite(pino_bit_2, DESATIVAR);
-          digitalWrite(pino_bit_1, ATIVAR);
-          break;
-
-        case 3:
-          digitalWrite(pino_bit_6, DESATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, ATIVAR);
-          digitalWrite(pino_bit_3, DESATIVAR);
-          digitalWrite(pino_bit_2, ATIVAR);
-          digitalWrite(pino_bit_1, DESATIVAR);
-          break;
-
-        case 4:
-          digitalWrite(pino_bit_6, DESATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, ATIVAR);
-          digitalWrite(pino_bit_3, DESATIVAR);
-          digitalWrite(pino_bit_2, ATIVAR);
-          digitalWrite(pino_bit_1, ATIVAR);
-          break;
-      }
-      break;
-  }
-}
-
-//
-void Leva_Peca_Magazine(byte prat, byte pos) {
+void Coloca_Peca_Magazine(byte prat, byte pos) {
   switch (prat) {
     case 0:
       switch (pos) {
         case 1:
-          digitalWrite(pino_bit_6, DESATIVAR);
+
           digitalWrite(pino_bit_5, DESATIVAR);
           digitalWrite(pino_bit_4, ATIVAR);
           digitalWrite(pino_bit_3, ATIVAR);
@@ -1049,7 +733,7 @@ void Leva_Peca_Magazine(byte prat, byte pos) {
           break;
 
         case 2:
-          digitalWrite(pino_bit_6, DESATIVAR);
+
           digitalWrite(pino_bit_5, DESATIVAR);
           digitalWrite(pino_bit_4, ATIVAR);
           digitalWrite(pino_bit_3, ATIVAR);
@@ -1058,7 +742,7 @@ void Leva_Peca_Magazine(byte prat, byte pos) {
           break;
 
         case 3:
-          digitalWrite(pino_bit_6, DESATIVAR);
+
           digitalWrite(pino_bit_5, DESATIVAR);
           digitalWrite(pino_bit_4, ATIVAR);
           digitalWrite(pino_bit_3, ATIVAR);
@@ -1067,7 +751,7 @@ void Leva_Peca_Magazine(byte prat, byte pos) {
           break;
 
         case 4:
-          digitalWrite(pino_bit_6, DESATIVAR);
+
           digitalWrite(pino_bit_5, DESATIVAR);
           digitalWrite(pino_bit_4, ATIVAR);
           digitalWrite(pino_bit_3, ATIVAR);
@@ -1080,7 +764,7 @@ void Leva_Peca_Magazine(byte prat, byte pos) {
     case 1:
       switch (pos) {
         case 1:
-          digitalWrite(pino_bit_6, DESATIVAR);
+
           digitalWrite(pino_bit_5, ATIVAR);
           digitalWrite(pino_bit_4, DESATIVAR);
           digitalWrite(pino_bit_3, DESATIVAR);
@@ -1089,7 +773,7 @@ void Leva_Peca_Magazine(byte prat, byte pos) {
           break;
 
         case 2:
-          digitalWrite(pino_bit_6, DESATIVAR);
+
           digitalWrite(pino_bit_5, ATIVAR);
           digitalWrite(pino_bit_4, DESATIVAR);
           digitalWrite(pino_bit_3, DESATIVAR);
@@ -1098,7 +782,7 @@ void Leva_Peca_Magazine(byte prat, byte pos) {
           break;
 
         case 3:
-          digitalWrite(pino_bit_6, DESATIVAR);
+
           digitalWrite(pino_bit_5, ATIVAR);
           digitalWrite(pino_bit_4, DESATIVAR);
           digitalWrite(pino_bit_3, DESATIVAR);
@@ -1107,7 +791,7 @@ void Leva_Peca_Magazine(byte prat, byte pos) {
           break;
 
         case 4:
-          digitalWrite(pino_bit_6, DESATIVAR);
+
           digitalWrite(pino_bit_5, ATIVAR);
           digitalWrite(pino_bit_4, DESATIVAR);
           digitalWrite(pino_bit_3, DESATIVAR);
@@ -1121,7 +805,7 @@ void Leva_Peca_Magazine(byte prat, byte pos) {
     case 2:
       switch (pos) {
         case 1:
-          digitalWrite(pino_bit_6, DESATIVAR);
+
           digitalWrite(pino_bit_5, ATIVAR);
           digitalWrite(pino_bit_4, DESATIVAR);
           digitalWrite(pino_bit_3, ATIVAR);
@@ -1130,7 +814,7 @@ void Leva_Peca_Magazine(byte prat, byte pos) {
           break;
 
         case 2:
-          digitalWrite(pino_bit_6, DESATIVAR);
+
           digitalWrite(pino_bit_5, ATIVAR);
           digitalWrite(pino_bit_4, DESATIVAR);
           digitalWrite(pino_bit_3, ATIVAR);
@@ -1139,7 +823,7 @@ void Leva_Peca_Magazine(byte prat, byte pos) {
           break;
 
         case 3:
-          digitalWrite(pino_bit_6, DESATIVAR);
+
           digitalWrite(pino_bit_5, ATIVAR);
           digitalWrite(pino_bit_4, DESATIVAR);
           digitalWrite(pino_bit_3, ATIVAR);
@@ -1148,7 +832,7 @@ void Leva_Peca_Magazine(byte prat, byte pos) {
           break;
 
         case 4:
-          digitalWrite(pino_bit_6, DESATIVAR);
+
           digitalWrite(pino_bit_5, ATIVAR);
           digitalWrite(pino_bit_4, DESATIVAR);
           digitalWrite(pino_bit_3, ATIVAR);
@@ -1161,41 +845,41 @@ void Leva_Peca_Magazine(byte prat, byte pos) {
 }
 
 //
-void Pega_Peca_Magazine(byte prat, byte pos) {
+void Retira_Peca_Magazine(byte prat, byte pos) {
   switch (prat) {
     case 0:
       switch (pos) {
         case 1:
-          digitalWrite(pino_bit_6, DESATIVAR);
-          digitalWrite(pino_bit_5, ATIVAR);
-          digitalWrite(pino_bit_4, ATIVAR);
+
+          digitalWrite(pino_bit_5, DESATIVAR);
+          digitalWrite(pino_bit_4, DESATIVAR);
           digitalWrite(pino_bit_3, DESATIVAR);
           digitalWrite(pino_bit_2, DESATIVAR);
           digitalWrite(pino_bit_1, DESATIVAR);
           break;
 
         case 2:
-          digitalWrite(pino_bit_6, DESATIVAR);
-          digitalWrite(pino_bit_5, ATIVAR);
-          digitalWrite(pino_bit_4, ATIVAR);
+
+          digitalWrite(pino_bit_5, DESATIVAR);
+          digitalWrite(pino_bit_4, DESATIVAR);
           digitalWrite(pino_bit_3, DESATIVAR);
           digitalWrite(pino_bit_2, DESATIVAR);
           digitalWrite(pino_bit_1, ATIVAR);
           break;
 
         case 3:
-          digitalWrite(pino_bit_6, DESATIVAR);
-          digitalWrite(pino_bit_5, ATIVAR);
-          digitalWrite(pino_bit_4, ATIVAR);
+
+          digitalWrite(pino_bit_5, DESATIVAR);
+          digitalWrite(pino_bit_4, DESATIVAR);
           digitalWrite(pino_bit_3, DESATIVAR);
           digitalWrite(pino_bit_2, ATIVAR);
           digitalWrite(pino_bit_1, DESATIVAR);
           break;
 
         case 4:
-          digitalWrite(pino_bit_6, DESATIVAR);
-          digitalWrite(pino_bit_5, ATIVAR);
-          digitalWrite(pino_bit_4, ATIVAR);
+
+          digitalWrite(pino_bit_5, DESATIVAR);
+          digitalWrite(pino_bit_4, DESATIVAR);
           digitalWrite(pino_bit_3, DESATIVAR);
           digitalWrite(pino_bit_2, ATIVAR);
           digitalWrite(pino_bit_1, ATIVAR);
@@ -1206,36 +890,36 @@ void Pega_Peca_Magazine(byte prat, byte pos) {
     case 1:
       switch (pos) {
         case 1:
-          digitalWrite(pino_bit_6, DESATIVAR);
-          digitalWrite(pino_bit_5, ATIVAR);
-          digitalWrite(pino_bit_4, ATIVAR);
+
+          digitalWrite(pino_bit_5, DESATIVAR);
+          digitalWrite(pino_bit_4, DESATIVAR);
           digitalWrite(pino_bit_3, ATIVAR);
           digitalWrite(pino_bit_2, DESATIVAR);
           digitalWrite(pino_bit_1, DESATIVAR);
           break;
 
         case 2:
-          digitalWrite(pino_bit_6, DESATIVAR);
-          digitalWrite(pino_bit_5, ATIVAR);
-          digitalWrite(pino_bit_4, ATIVAR);
+
+          digitalWrite(pino_bit_5, DESATIVAR);
+          digitalWrite(pino_bit_4, DESATIVAR);
           digitalWrite(pino_bit_3, ATIVAR);
           digitalWrite(pino_bit_2, DESATIVAR);
           digitalWrite(pino_bit_1, ATIVAR);
           break;
 
         case 3:
-          digitalWrite(pino_bit_6, DESATIVAR);
-          digitalWrite(pino_bit_5, ATIVAR);
-          digitalWrite(pino_bit_4, ATIVAR);
+
+          digitalWrite(pino_bit_5, DESATIVAR);
+          digitalWrite(pino_bit_4, DESATIVAR);
           digitalWrite(pino_bit_3, ATIVAR);
           digitalWrite(pino_bit_2, ATIVAR);
           digitalWrite(pino_bit_1, DESATIVAR);
           break;
 
         case 4:
-          digitalWrite(pino_bit_6, DESATIVAR);
-          digitalWrite(pino_bit_5, ATIVAR);
-          digitalWrite(pino_bit_4, ATIVAR);
+
+          digitalWrite(pino_bit_5, DESATIVAR);
+          digitalWrite(pino_bit_4, DESATIVAR);
           digitalWrite(pino_bit_3, ATIVAR);
           digitalWrite(pino_bit_2, ATIVAR);
           digitalWrite(pino_bit_1, ATIVAR);
@@ -1247,36 +931,36 @@ void Pega_Peca_Magazine(byte prat, byte pos) {
     case 2:
       switch (pos) {
         case 1:
-          digitalWrite(pino_bit_6, ATIVAR);
+
           digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, DESATIVAR);
+          digitalWrite(pino_bit_4, ATIVAR);
           digitalWrite(pino_bit_3, DESATIVAR);
           digitalWrite(pino_bit_2, DESATIVAR);
           digitalWrite(pino_bit_1, DESATIVAR);
           break;
 
         case 2:
-          digitalWrite(pino_bit_6, ATIVAR);
+
           digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, DESATIVAR);
+          digitalWrite(pino_bit_4, ATIVAR);
           digitalWrite(pino_bit_3, DESATIVAR);
           digitalWrite(pino_bit_2, DESATIVAR);
           digitalWrite(pino_bit_1, ATIVAR);
           break;
 
         case 3:
-          digitalWrite(pino_bit_6, ATIVAR);
+
           digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, DESATIVAR);
+          digitalWrite(pino_bit_4, ATIVAR);
           digitalWrite(pino_bit_3, DESATIVAR);
           digitalWrite(pino_bit_2, ATIVAR);
           digitalWrite(pino_bit_1, DESATIVAR);
           break;
 
         case 4:
-          digitalWrite(pino_bit_6, ATIVAR);
+
           digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, DESATIVAR);
+          digitalWrite(pino_bit_4, ATIVAR);
           digitalWrite(pino_bit_3, DESATIVAR);
           digitalWrite(pino_bit_2, ATIVAR);
           digitalWrite(pino_bit_1, ATIVAR);
@@ -1287,129 +971,47 @@ void Pega_Peca_Magazine(byte prat, byte pos) {
 }
 
 //
-void Leva_Peca_Base(char tipo_peca, byte pos) {
-  switch (tipo_peca) {
-    case 'V':
-      switch (pos) {
-        case 1:
-          digitalWrite(pino_bit_6, ATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, DESATIVAR);
-          digitalWrite(pino_bit_3, ATIVAR);
-          digitalWrite(pino_bit_2, DESATIVAR);
-          digitalWrite(pino_bit_1, DESATIVAR);
-          break;
-
-        case 2:
-          digitalWrite(pino_bit_6, ATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, DESATIVAR);
-          digitalWrite(pino_bit_3, ATIVAR);
-          digitalWrite(pino_bit_2, DESATIVAR);
-          digitalWrite(pino_bit_1, ATIVAR);
-          break;
-
-        case 3:
-          digitalWrite(pino_bit_6, ATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, DESATIVAR);
-          digitalWrite(pino_bit_3, ATIVAR);
-          digitalWrite(pino_bit_2, ATIVAR);
-          digitalWrite(pino_bit_1, DESATIVAR);
-          break;
-
-        case 4:
-          digitalWrite(pino_bit_6, ATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, DESATIVAR);
-          digitalWrite(pino_bit_3, ATIVAR);
-          digitalWrite(pino_bit_2, ATIVAR);
-          digitalWrite(pino_bit_1, ATIVAR);
-          break;
-      }
+void Retira_Peca_Esteira(byte calha) {
+  switch (calha) {
+    case 1:
+      digitalWrite(pino_bit_5, ATIVAR);
+      digitalWrite(pino_bit_4, ATIVAR);
+      digitalWrite(pino_bit_3, DESATIVAR);
+      digitalWrite(pino_bit_2, DESATIVAR);
+      digitalWrite(pino_bit_1, DESATIVAR);
       break;
-
-    case 'P':
-      switch (pos) {
-        case 1:
-          digitalWrite(pino_bit_6, ATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, ATIVAR);
-          digitalWrite(pino_bit_3, DESATIVAR);
-          digitalWrite(pino_bit_2, DESATIVAR);
-          digitalWrite(pino_bit_1, DESATIVAR);
-          break;
-
-        case 2:
-          digitalWrite(pino_bit_6, ATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, ATIVAR);
-          digitalWrite(pino_bit_3, DESATIVAR);
-          digitalWrite(pino_bit_2, DESATIVAR);
-          digitalWrite(pino_bit_1, ATIVAR);
-          break;
-
-        case 3:
-          digitalWrite(pino_bit_6, ATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, ATIVAR);
-          digitalWrite(pino_bit_3, DESATIVAR);
-          digitalWrite(pino_bit_2, ATIVAR);
-          digitalWrite(pino_bit_1, DESATIVAR);
-          break;
-
-        case 4:
-          digitalWrite(pino_bit_6, ATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, ATIVAR);
-          digitalWrite(pino_bit_3, DESATIVAR);
-          digitalWrite(pino_bit_2, ATIVAR);
-          digitalWrite(pino_bit_1, ATIVAR);
-          break;
-      }
-
+    case 2:
+      digitalWrite(pino_bit_5, ATIVAR);
+      digitalWrite(pino_bit_4, ATIVAR);
+      digitalWrite(pino_bit_3, DESATIVAR);
+      digitalWrite(pino_bit_2, DESATIVAR);
+      digitalWrite(pino_bit_1, ATIVAR);
       break;
-
-    case 'M':
-      switch (pos) {
-        case 1:
-          digitalWrite(pino_bit_6, ATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, ATIVAR);
-          digitalWrite(pino_bit_3, ATIVAR);
-          digitalWrite(pino_bit_2, DESATIVAR);
-          digitalWrite(pino_bit_1, DESATIVAR);
-          break;
-
-        case 2:
-          digitalWrite(pino_bit_6, ATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, ATIVAR);
-          digitalWrite(pino_bit_3, ATIVAR);
-          digitalWrite(pino_bit_2, DESATIVAR);
-          digitalWrite(pino_bit_1, ATIVAR);
-          break;
-
-        case 3:
-          digitalWrite(pino_bit_6, ATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, ATIVAR);
-          digitalWrite(pino_bit_3, ATIVAR);
-          digitalWrite(pino_bit_2, ATIVAR);
-          digitalWrite(pino_bit_1, DESATIVAR);
-          break;
-
-        case 4:
-          digitalWrite(pino_bit_6, ATIVAR);
-          digitalWrite(pino_bit_5, DESATIVAR);
-          digitalWrite(pino_bit_4, ATIVAR);
-          digitalWrite(pino_bit_3, ATIVAR);
-          digitalWrite(pino_bit_2, ATIVAR);
-          digitalWrite(pino_bit_1, ATIVAR);
-          break;
-      }
+    case 3:
+      digitalWrite(pino_bit_5, ATIVAR);
+      digitalWrite(pino_bit_4, ATIVAR);
+      digitalWrite(pino_bit_3, DESATIVAR);
+      digitalWrite(pino_bit_2, ATIVAR);
+      digitalWrite(pino_bit_1, DESATIVAR);
+      break;
+    case 4:
+      digitalWrite(pino_bit_5, ATIVAR);
+      digitalWrite(pino_bit_4, ATIVAR);
+      digitalWrite(pino_bit_3, DESATIVAR);
+      digitalWrite(pino_bit_2, ATIVAR);
+      digitalWrite(pino_bit_1, ATIVAR);
       break;
   }
+}
+
+//
+void Libera_Coloca_Peca_Esteira() {
+  digitalWrite(pino_bit_5, DESATIVAR);
+  digitalWrite(pino_bit_4, DESATIVAR);
+  digitalWrite(pino_bit_3, DESATIVAR);
+  digitalWrite(pino_bit_2, DESATIVAR);
+  digitalWrite(pino_bit_1, DESATIVAR);
+  digitalWrite(pino_sinal_esteira, ATIVAR);
 }
 
 //Garante que o robô não vai colocar peças onde a posição já está ocupada, ou pegar uma peça em uma posição vazia, na magazine
@@ -1443,111 +1045,49 @@ bool verificaMovimentoMagazine(char tipoPeca, byte pos, bool colocarPeca) {
 
   Serial.println("");
 
+  bool verif = ((magazine[pratel][pos - 1] == '-') == colocarPeca);
 
-  delay(1000);
+  Serial.print("Posição selecionada: ");
+  Serial.println(magazine[pratel][pos - 1]);
+
+  Serial.print("Resultado da Verificação: ");
+  Serial.println(verif);
+
+  //delay(1000);
 
   if ((magazine[pratel][pos - 1] == '-') == colocarPeca) {
     return true;
   } else {
     tratamentoErro('M');
-    Serial.println("erro aqui ...............................................");
     return false;
   }
 }
 
-//Garante que o robô não vai colocar peças onde a posição já está ocupada, ou pegar uma peça em uma posição vazia, na base de peças
-bool verificaMovimentoBase(char tipoPeca, byte pos, bool colocarPeca) {
-  byte coluna = 0;
+//Garante que o robô não vai pegar uma peça em uma posição vazia, nas calhas da Esteira
+bool verificaMovimentoCalhas(byte calha, byte pos) {
+  Serial.println("");
 
-  switch (tipoPeca) {
-    case 'V':
-      coluna = 0;
-      break;
-    case 'P':
-      coluna = 1;
-      break;
-    case 'M':
-      coluna = 2;
-      break;
+  Serial.print("Calha: ");
+  Serial.println(calha);
+
+  Serial.print("Posição ");
+  Serial.println(pos);
+
+  Serial.println("Verificação das Calhas da Esteira");
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 4; j++) {
+      Serial.print(calhasEsteira[i][j]);
+    }
+    Serial.println("");
   }
 
-  //Verifica se tem peças nas posições abaixo da posição em que se quer guardar a peça
-  if (colocarPeca) {
-    bool verificacao = false;
+  Serial.println("");
 
-    if (pos == 4) {
-      verificacao = true;
-    } else {
-      for (int i = pos; i < 4; i++) {
-        if (baseRobo[coluna][i] == true) {
-          verificacao = true;
-        } else {
-          tratamentoErro('M');
-          return false;
-        }
-      }
-    }
-
-
-    if ((baseRobo[coluna][pos - 1] == false) && verificacao == true) {
-      return true;
-    } else {
-      tratamentoErro('M');
-      return false;
-    }
-
+  if (calhasEsteira[calha][pos - 1] == true) {
+    return true;
   } else {
-    //Verifica se não tem peças nas posições anteriores à posição em que o robô vai buscar
-    bool verificacao = false;
-
-    Serial.println("");
-
-    Serial.print("Coluna: ");
-    Serial.println(coluna);
-
-    Serial.print("Posição ");
-    Serial.println(pos);
-
-    Serial.println("Verificação da Base do Robô");
-    for (int i = 0; i < 3; i++) {
-      for (int j = 0; j < 4; j++) {
-        Serial.print(baseRobo[i][j]);
-      }
-      Serial.println("");
-    }
-
-    Serial.println("");
-
-    delay(1000);
-
-    if (pos > 1) {
-      for (int i = (pos - 1); i >= 1; i--) {
-
-        Serial.print("Base ");
-        Serial.print(tipoPeca);
-        Serial.print(i);
-        Serial.print(": ");
-        Serial.println(baseRobo[coluna][i - 1]);
-
-        if (baseRobo[coluna][i - 1] == false) {
-          verificacao = true;
-        } else {
-          tratamentoErro('M');
-          verificacao = false;
-          Serial.println("erroloop");
-          return false;
-        }
-      }
-    } else {
-      verificacao = true;
-    }
-
-    if ((baseRobo[coluna][pos - 1] == true) && verificacao == true) {
-      return true;
-    } else {
-      tratamentoErro('M');
-      return false;
-    }
+    tratamentoErro('M');
+    return false;
   }
 }
 
@@ -1556,6 +1096,92 @@ void tratamentoErro(char erro) {
   switch (erro) {
     case 'M':
       Serial.println("ERRO - MOVIMENTO ERRADO");
+      processo_em_andamento = false;
+      ciclo_atual = 120;
+      movimento_atual_processo = 1;
+
+      Serial.println("----------------------------------------------------");
+
+      Serial.println("Verificação da Magazine");
+      for (int i = 0; i < 3; i++) {
+        Serial.println(magazine[i]);
+      }
+
+      Serial.println("");
+
+      // Serial.println("Verificação da Base do Robô");
+      // for (int i = 0; i < 3; i++) {
+      //   for (int j = 0; j < 4; j++) {
+      //     Serial.print(baseRobo[i][j]);
+      //   }
+      //   Serial.println("");
+      // }
+
+      Serial.println("Verificação da Calha da Esteira");
+      for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 4; j++) {
+          Serial.print(calhasEsteira[i][j]);
+        }
+        Serial.println("");
+      }
+
+      Serial.println("----------------------------------------------------");
+
+      Serial.println("CONFIGURACOES");
+      Serial.print("Hab_V: ");
+      Serial.println(Hab_V);
+      Serial.print("Hab_P: ");
+      Serial.println(Hab_P);
+      Serial.print("Hab_M: ");
+      Serial.println(Hab_M);
+
+      Serial.print("Prat_V: ");
+      Serial.println(Prat_V);
+      Serial.print("Prat_P: ");
+      Serial.println(Prat_P);
+      Serial.print("Prat_M: ");
+      Serial.println(Prat_M);
+
+      Serial.print("Tipo_Movimento: ");
+      Serial.println(Tipo_Movimento);
+      Serial.print("Tipo_Sequencia: ");
+      Serial.println(Tipo_Sequencia);
+      Serial.print("n_ciclos: ");
+      Serial.println(n_ciclos);
+
+      Serial.println("----------------------------------------------------");
+
+      Serial.println("VARIAVEIS DE CONTROLE");
+      Serial.print("Tipo_Movimento: ");
+      Serial.println(Tipo_Movimento);
+
+      Serial.println("");
+      Serial.print("Posição Inicial pos: ");
+      Serial.println(pos);
+
+      Serial.println("");
+      Serial.println("Setorizações");
+      Serial.print("setorizacao: ");
+      Serial.println(setorizacao);
+      Serial.print("ciclo_pecas: ");
+      Serial.println(ciclo_pecas);
+
+      Serial.println("");
+
+      Serial.print("fim_movimentacao_pecas: ");
+      Serial.println(fim_movimentacao_pecas);
+      Serial.print("inicio_peca: ");
+      Serial.println(inicio_peca);
+
+      Serial.print("movimento_atual_processo: ");
+      Serial.println(movimento_atual_processo);
+
+      Serial.print("libera_mudanca_movimento: ");
+      Serial.println(libera_mudanca_movimento);
+      Serial.print("interrompeCiclos: ");
+      Serial.println(interrompeCiclos);
+      Serial.println("----------------------------------------------------");
+
       break;
     default:
       Serial.println("ERRO NÃO IDENTIFICADO");
@@ -1578,81 +1204,41 @@ void observadorRespostaRobo() {
   }
 }
 
-//Retorna um número aleatório entre 1 e 4, excluindo as posições que já estão ocupadas
-/*byte aleatorio(byte prateleira, bool encher) {
-  bool verificacao = false;
-  byte minimo = 1;
-  byte maximo = 4;
-  byte numero = random(minimo, (maximo + 1));
-
-  if ((posicoes[prateleira][0] != encher) || (posicoes[prateleira][1] != encher) || (posicoes[prateleira][2] != encher) || (posicoes[prateleira][3] != encher)) {
-
-    while (!verificacao) {
-      if (posicoes[prateleira][(numero - 1)] == encher) {
-        numero = random(minimo, (maximo + 1));
-      } else {
-        verificacao = true;
-      }
-      Serial.println("loop");
-    }
-
-    posicoes[prateleira][(numero - 1)] = encher;
-
-    return numero;
-  } else {
-    return 0;
-  }
-}*/
-
+//
 byte aleatorio(byte prateleira, bool colocar) {
   bool verificacao = false;
   byte minimo = 1;
   byte maximo = 4;
   byte numero = random(minimo, (maximo + 1));
 
-  if (((magazine[prateleira][0] == '-') == colocar)
-    || (magazine[prateleira][1] == '-') == colocar)
-    || (magazine[prateleira][2] == '-') == colocar) 
-    || (magazine[prateleira][3] == '-') == colocar)) {
+  Serial.println("aleatorio");
 
-      while (!verificacao) {
-        if (posicoes[prateleira][(numero - 1)] == colocar) {
-          numero = random(minimo, (maximo + 1));
-        } else {
-          verificacao = true;
-        }
-        Serial.println("loop");
+
+  if (((magazine[prateleira][0] == '-') == colocar) || ((magazine[prateleira][1] == '-') == colocar) || ((magazine[prateleira][2] == '-') == colocar) || ((magazine[prateleira][3] == '-') == colocar)) {
+
+    Serial.println("dentro if");
+
+    while (!verificacao) {
+      if ((magazine[prateleira][(numero - 1)] == '-') == colocar) {
+        verificacao = true;
+      } else {
+        numero = random(minimo, (maximo + 1));
       }
 
-      posicoes[prateleira][(numero - 1)] = colocar;
+      bool vereif = (magazine[prateleira][(numero - 1)] == '-') == colocar;
 
-      return numero;
+      Serial.println("continua loop");
+      Serial.println("numero");
+      Serial.println(numero);
+      Serial.println("vereif");
+      Serial.println(vereif);
     }
-  else {
-    return 0;
+
+    //posicoes[prateleira][(numero - 1)] = colocar;
+    Serial.println("saiu do loop");
+
+    return numero;
+  } else {
+    return false;
   }
-}
-
-//Gera uma mensagem apenas as informações da magazine que mudaram e envia para o Esp32
-//mudar para tab da Comunicação com Esp
-void enviarDadosMagazine(byte prateleira, byte posicao) {
-  //enviandoDadosMagazine = true;
-  /*String msg = String();
-    msg = "<";
-    msg += prateleira;
-    msg += posicao;
-    msg += magazine[prateleira][posicao];
-    msg += '>';
-    Serial.println(msg);*/
-
-  Serial.print('<');
-  Serial.print('{');
-  Serial.print(prateleira);
-  Serial.print('[');
-  Serial.print(posicao);
-  Serial.print('(');
-  Serial.print(magazine[prateleira][posicao]);
-  Serial.println('>');
-
-  //enviandoDadosMagazine = false;
 }
