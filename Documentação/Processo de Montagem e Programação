@@ -2,28 +2,41 @@ Desenvolvimento do Processo de Montagem dos Componentes Eletrônicos
 
 Para a iniciar a montagem dos componentes, foi desenvolvido o diagrama abaixo, especificando as ligações necessárias.
 
+<>
+
 Fase de Testes
+Os testes foram realizados utilizando protoboard e cabos de prototipagem.
 
 Bases de Madeira
+Para a fixação dos componentes, foram utilizadas duas placas de madeira que podem ser colocadas e retiradas de dentro do Magazine pela porta, facilitando uma possível manutenção. As placas forma cortadas um uma serra de fita, os furos forma feitos em furadeira de bancada com brocas de 3mm e 5mm e a pintura com tinta preta fosca.
 
 Caixa da IHM
+A caixa para a IHM foi reutilizada do projeto original, por isso, foi necessária a utilização de massa plástica para tapar os furos antigos. Os furos dos botões foram feitos em furadeira de bancada com brocas de 3mm (para marcação) e depois 16mm. O rasgo para o Display foi feito com furos, serra manual e lima para acabamento.
 
 Espaçadores e Trilhos
+Para fixar os componentes nas placas de madeira, foram utilizados espaçadores e parafusos e porcas M3 para os componentes eletrônicos. Para o Relê 24V e bornes, foram utilizados trilhos DIM fixados com parafusos e porcas M5.
 
 Bornes, Prensa Cabos e Conector na lateral
+Prensa cabos foram utilizados para passar os cabos da IHM e de alimentação para dentro do Magazine. Bornes fazem a conexão elétrica entre o Esp32 e os componentes da IHM (Display TFT e botões) para facilitar a manutenção. O conector na lateral esquerda do Magazine faz a conexão com os cabos que vão para os bornes do Robô.
 
 Cabos
+As ligações elétricas entre os componentes eletrônicos foram feitas utilizando cabos de prototipagem. Para enviar e receber dados da IHM, foi utilizado um cabo PP de 16 vias, conectado a bornes no Magazine e na caixa da IHM. O conector lateral junta os contatos do Shield de Relês 5V com os bornes do Robô.
+
+
 
 
 Desenvolvimento do Processo de Programação do Arduino, Esp32 e Robô
 
-Para desenvolver o código usado no Arduino e Esp32, juntamente com a lógica e os movimentos do Robô, foram desenvolvidos fluxogramas para o processo de funcionamento de cada componente.
+Para desenvolver o código usado no Arduino e Esp32, juntamente com a lógica e os movimentos do Robô, foram desenvolvidos fluxogramas para o processo de funcionamento de cada componente (ver anexos).
 
 
-Arduino
+Arduino (Anexo __ - Fluxograma de lógica do Arduino)
+
+Comunicação Serial
+
+Esp32 - IHM (Anexo __ - Fluxograma da IHM)
+
+Esp32 - Firebase
 
 
-Esp32
-
-
-
+Robô (Anexo __ - Fluxograma de Lógica de Seleção de Movimentos)
