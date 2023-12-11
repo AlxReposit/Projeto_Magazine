@@ -40,3 +40,8 @@ Esp32 - Firebase
 
 
 Robô (Anexo __ - Fluxograma de Lógica de Seleção de Movimentos)
+Para a programação do Robô, a lógica utilizada verifica os sinais de entrada e converte um conjunto de 5 sinais digitais (ou um número binário de 5 dígitos) em um número inteiro, e escolhe o movimento do robô com base nesse número.
+
+O robô espera o sinal do Arduino na primeira entrada, e depois lê os sinais nas outras 5 entradas. Caso a segunda entrada esteja recebenda sinal, adiciona 1 em uma variável numérica; para a terceira entrada, adiciona 2 na mesma variável; para a quarta, adiciona 4; para quinta, adiciona 8; para a sexta, adiciona 16.
+
+Após essa verificação, o robô faz a seleção dos movimentos com base no valor da variável inteira, conforme descrito no diagrama ___ e na tabela em anexo ___ . Isso foi necessário pois a programação do robô não permite verificar todas as entradas de uma vez, então é preciso verificar uma por vez e salvar o resultado.
