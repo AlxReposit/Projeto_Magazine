@@ -1,1 +1,29 @@
+Desenvolvimento do Processo de Montagem dos Componentes Eletrônicos
+
+Para a iniciar a montagem dos componentes, foi desenvolvido o diagrama abaixo, especificando as ligações necessárias.
+
+Fase de Testes
+
+Bases de Madeira
+
+Caixa da IHM
+
+Espaçadores e Trilhos
+
+Bornes, Prensa Cabos e Conector na lateral
+
+Cabos
+
+
+Desenvolvimento do Processo de Programação do Arduino, Esp32 e Robô
+
+Para desenvolver o código usado no Arduino e Esp32, juntamente com a lógica e os movimentos do Robô, foram desenvolvidos fluxogramas para o processo de funcionamento de cada componente.
+
+
+Arduino
+
+
+Esp32
+
+
 
