@@ -43,7 +43,7 @@ Orçamento:
 108
 
 - Botão de Pulso
-10
+10 * 6 = 60
 
 - Shield de Relês 5V
 35
@@ -61,7 +61,12 @@ Jumpers x40
 30
 
 Bornes x 32
+128
 
 terminais x 40
+7
 
 anilhas x 36
+12
+
+Total 601,5
