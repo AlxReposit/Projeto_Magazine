@@ -10,4 +10,4 @@ https://github.com/mobizt/Firebase-ESP-Client/blob/main/src/README.md
 https://randomnerdtutorials.com/esp32-firebase-realtime-database/
 https://randomnerdtutorials.com/esp32-firebase-web-app/
 
-- Biblioteca ___ usada para comunicação com o LCD TFT ILI9341
+- Biblioteca TFT_eSPI usada para comunicação com o LCD TFT ILI9341
