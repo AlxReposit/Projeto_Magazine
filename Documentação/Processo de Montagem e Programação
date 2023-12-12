@@ -22,21 +22,22 @@ Prensa cabos foram utilizados para passar os cabos da IHM e de alimentação par
 Cabos
 As ligações elétricas entre os componentes eletrônicos foram feitas utilizando cabos de prototipagem. Para enviar e receber dados da IHM, foi utilizado um cabo PP de 16 vias, conectado a bornes no Magazine e na caixa da IHM. O conector lateral junta os contatos do Shield de Relês 5V com os bornes do Robô.
 
-
+Protoboard
+Após alguns testes, foi decidido retirar os bornes de conexão entre o Esp32 e a IHM e fazer uma ligação mais direta para reduzir a resistência elétrica entre eles, pois o Display não estava funcionando corretamente. Assim, foram usadas duas protobards e conectores do tipo 2EDGK Fêmea e 2EDGRC Macho.
 
 
 Desenvolvimento do Processo de Programação do Arduino, Esp32 e Robô
 
 Para desenvolver o código usado no Arduino e Esp32, juntamente com a lógica e os movimentos do Robô, foram desenvolvidos fluxogramas para o processo de funcionamento de cada componente (ver anexos).
 
-
 Arduino (Anexo __ - Fluxograma de lógica do Arduino)
+O Arduino possui um algoritmo que identifica as configurações selecionadas para o processo e 
 
 Comunicação Serial
 
 Esp32 - IHM (Anexo __ - Fluxograma da IHM)
 
-Esp32 - Firebase
+Esp32 - Firebase (Anexo __ - Diagrama do monitoramento e banco de dados)
 
 
 Robô (Anexo __ - Fluxograma de Lógica de Seleção de Movimentos)
